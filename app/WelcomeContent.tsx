@@ -1,14 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
+import type { User } from "@supabase/supabase-js"
 
-export default function WelcomePage() {
-  const [showLogin, setShowLogin] = useState(false)
-  const [showSignup, setShowSignup] = useState(false)
+export default function WelcomePage({
+  autoOpenLogin,
+  autoOpenSignup,
+}: {
+  autoOpenLogin?: boolean
+  autoOpenSignup?: boolean
+}) {
+  const [user, setUser] = useState<User | null>(null)
+  const [showLogin, setShowLogin] = useState(autoOpenLogin ?? false)
+  const [showSignup, setShowSignup] = useState(autoOpenSignup ?? false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+  }, [supabase])
 
   // ── Login state ──
   const [loginEmail, setLoginEmail] = useState("")
@@ -55,6 +68,12 @@ export default function WelcomePage() {
     router.push("/dashboard")
   }
 
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setUser(null)
+    router.push("/?login=1")
+  }
+
   async function handleSignup() {
     if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword || !signupConfirm) return
     if (signupPassword !== signupConfirm) return setSignupError("Passwords do not match")
@@ -88,8 +107,39 @@ export default function WelcomePage() {
           <a href="#">Pricing</a>
         </div>
         <div className="nav-actions">
-          <button className="btn-ghost" onClick={() => setShowLogin(true)}>Sign in</button>
-          <button className="btn-primary" onClick={() => setShowSignup(true)}>Get started</button>
+          {user ? (
+            <div className="user-menu-wrap">
+              <button className="user-avatar-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
+                <div className="user-avatar">{user.email?.charAt(0).toUpperCase() || "U"}</div>
+              </button>
+              {showUserMenu && (
+                <>
+                  <div className="user-menu-overlay" onClick={() => setShowUserMenu(false)} />
+                  <div className="user-menu">
+                    <div className="user-menu-header">{user.email}</div>
+                    <button className="user-menu-item" onClick={() => { setShowUserMenu(false); router.push("/dashboard") }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                      Dashboard
+                    </button>
+                    <button className="user-menu-item" onClick={() => { setShowUserMenu(false); router.push("/dashboard") }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                      Settings
+                    </button>
+                    <div className="user-menu-divider" />
+                    <button className="user-menu-item user-menu-signout" onClick={() => { setShowUserMenu(false); handleSignOut() }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              <button className="btn-ghost" onClick={() => setShowLogin(true)}>Sign in</button>
+              <button className="btn-primary" onClick={() => setShowSignup(true)}>Get started</button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -102,11 +152,20 @@ export default function WelcomePage() {
         <h1>Never fall behind a<br />deadline <em>again</em></h1>
         <p>Rebi Calendar automatically redistributes missed tasks into your remaining days — so you always have a clear, honest path to done.</p>
         <div className="hero-cta">
-          <button className="btn-hero" onClick={() => setShowSignup(true)}>
-            Start for free
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-          <a className="btn-hero-ghost" href="#how">See how it works</a>
+          {user ? (
+            <button className="btn-hero" onClick={() => router.push("/dashboard")}>
+              Go to Dashboard
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          ) : (
+            <>
+              <button className="btn-hero" onClick={() => setShowSignup(true)}>
+                Start for free
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+              <a className="btn-hero-ghost" href="#how">See how it works</a>
+            </>
+          )}
         </div>
       </section>
 
@@ -316,8 +375,8 @@ export default function WelcomePage() {
       <div className="cta-band">
         <h2>Your next deadline is waiting.</h2>
         <p>Start building a calendar that bends to your life — not the other way around.</p>
-        <button className="btn-hero" onClick={() => setShowSignup(true)}>
-          Create your first calendar
+        <button className="btn-hero" onClick={() => user ? router.push("/dashboard") : setShowSignup(true)}>
+          {user ? "Go to Dashboard" : "Create your first calendar"}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>

@@ -1,23 +1,20 @@
 "use client"
 
-import { useEffect, useMemo, useState, useCallback } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import type { TaskRow, DayOffRow, CalendarRow } from "./[id]/page"
+import type { Task, TasksByDate, SubjectTag } from "./views/helpers"
+import {
+  dateKey, dateFromKey, formatDateLabel, isSameDate,
+  parseDurationToMinutes, formatMinutes, getWeekStart,
+  tagLabel, tagClass,
+} from "./views/helpers"
+import MonthlyView from "./views/MonthlyView"
+import DayView from "./views/DayView"
 
-type SubjectTag = "p" | "bio" | "rc" | "math"
-type ViewMode = "weekly" | "daily" | "monthly"
 type RebalanceView = "clean" | "detailed" | "compact"
-
-type Task = {
-  id: string
-  name: string
-  tag: SubjectTag
-  time: string
-  done: boolean
-}
-
-type TasksByDate = Record<string, Task[]>
+type ViewMode = "weekly" | "daily" | "monthly"
 
 type PlannedTask = Task & {
   originalDate: string
@@ -43,66 +40,6 @@ type RebalancePlan =
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-function dateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`
-}
-
-function dateFromKey(key: string) {
-  const [y,m,d] = key.split("-").map(Number)
-  return new Date(y,m-1,d)
-}
-
-function formatDateLabel(key: string) {
-  const d = dateFromKey(key)
-  return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
-}
-
-function isSameDate(a: Date, b: Date) {
-  return a.getDate()===b.getDate() && a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear()
-}
-
-function parseDurationToMinutes(value: string) {
-  const text = String(value||"").trim().toLowerCase()
-  if (!text||text==="-") return null
-  let mins = 0, matched = false
-  const h = text.match(/(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours)\b/)
-  const m = text.match(/(\d+)\s*(m|min|mins|minute|minutes)\b/)
-  if (h) { mins+=Number(h[1])*60; matched=true }
-  if (m) { mins+=Number(m[1]); matched=true }
-  if (!matched&&/^\d+$/.test(text)) { mins=Number(text); matched=true }
-  return matched&&mins>0 ? Math.round(mins) : null
-}
-
-function formatMinutes(mins: number) {
-  const h = Math.floor(mins/60), m=mins%60
-  if (h&&m) return `${h}h ${m}min`
-  if (h) return `${h}h`
-  return `${m}min`
-}
-
-function tagLabel(tag: SubjectTag) { return {p:"P",bio:"BIO",rc:"RC",math:"MATH"}[tag] }
-function tagClass(tag: SubjectTag) { return {p:"tag-p",bio:"tag-bio",rc:"tag-rc",math:"tag-math"}[tag] }
-
-function getWeekStart(date: Date) {
-  const d = new Date(date); d.setDate(d.getDate()-d.getDay()); d.setHours(0,0,0,0)
-  return d
-}
-
-function computeTotalTime(dayTasks: Task[]) {
-  const m = dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
-  return m?formatMinutes(m):null
-}
-
-function getEligibleStudyDays(startKey: string, examKey: string, daysOff: Set<string>) {
-  const start = dateFromKey(startKey), exam = dateFromKey(examKey)
-  const dates: string[] = []
-  for (const day = new Date(start); day<=exam; day.setDate(day.getDate()+1)) {
-    const k = dateKey(day)
-    if (!daysOff.has(k)) dates.push(k)
-  }
-  return dates
-}
-
 function getUnfinishedTasks(tasks: TasksByDate) {
   return Object.entries(tasks).sort(([a],[b])=>a.localeCompare(b))
     .flatMap(([key,dayTasks]) =>
@@ -112,6 +49,15 @@ function getUnfinishedTasks(tasks: TasksByDate) {
 function buildBalancedPlan(tasks: TasksByDate, startKey: string, examKey: string, daysOff: Set<string>): RebalancePlan {
   const unfinished = getUnfinishedTasks(tasks)
   const invalid = unfinished.filter(t=>!t.minutes)
+  const getEligibleStudyDays = (startKey: string, examKey: string, daysOff: Set<string>) => {
+    const start = dateFromKey(startKey), exam = dateFromKey(examKey)
+    const dates: string[] = []
+    for (const day = new Date(start); day<=exam; day.setDate(day.getDate()+1)) {
+      const k = dateKey(day)
+      if (!daysOff.has(k)) dates.push(k)
+    }
+    return dates
+  }
   const studyDays = getEligibleStudyDays(startKey,examKey,daysOff)
   if (!studyDays.length) return {error:"No study days are available between the selected dates."}
   if (invalid.length) return {error:"Every unfinished task needs a valid duration before rebalancing."}
@@ -154,11 +100,13 @@ export default function CalendarView({
 
   const [daysOff, setDaysOff] = useState<Set<string>>(() => new Set(initialDaysOff.map((d) => d.date)))
   const [loading, setLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>("weekly")
   const [currentWeekStart, setCurrentWeekStart] = useState(() => getWeekStart(new Date()))
   const [addingToDay, setAddingToDay] = useState<string | null>(null)
   const [taskName, setTaskName] = useState("")
   const [taskTag, setTaskTag] = useState<SubjectTag>("p")
   const [taskTime, setTaskTime] = useState("")
+  const [taskStart, setTaskStart] = useState("09:00")
   const [dayOffInput, setDayOffInput] = useState("")
   const [rebalanceOpen, setRebalanceOpen] = useState(false)
   const [rebalanceStartDate, setRebalanceStartDate] = useState(calendar.start_date || dateKey(new Date()))
@@ -242,7 +190,7 @@ export default function CalendarView({
       : `${durationMinutes}min`
     setTasks(prev => ({
       ...prev,
-      [dayKey]: [...(prev[dayKey]||[]), { id: taskId, name: title, tag: subject, time: timeStr, done: false }]
+      [dayKey]: [...(prev[dayKey]||[]), { id: taskId, name: title, tag: subject, time: timeStr, start: taskStart, done: false }]
     }))
   }
 
@@ -312,7 +260,7 @@ export default function CalendarView({
   }
 
   function openModal(dayKey: string) {
-    setAddingToDay(dayKey); setTaskName(""); setTaskTag("p"); setTaskTime("")
+    setAddingToDay(dayKey); setTaskName(""); setTaskTag("p"); setTaskTime(""); setTaskStart("09:00")
   }
 
   async function saveTask() {
@@ -331,16 +279,41 @@ export default function CalendarView({
     toggleTaskDone(dayKey, id, task.done)
   }
 
+  function deleteTask(dayKey: string, id: string) {
+    setTasks(prev => {
+      const next = { ...prev }
+      next[dayKey] = (next[dayKey] || []).filter(t => t.id !== id)
+      if (next[dayKey].length === 0) delete next[dayKey]
+      return next
+    })
+  }
+
+  function handleAddTask() {
+    const now = new Date()
+    openModal(dateKey(now))
+  }
+
+  const weekNav = (
+    <div className="cal-menu-nav">
+      <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
+      <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
+      <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
+    </div>
+  )
+
   return (
-    <main className="schedule-app" style={{ paddingTop: "24px" }}>
-      <div className="topbar">
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button className="btn" onClick={() => router.push("/dashboard")} type="button">
-            &larr; Dashboard
-          </button>
+    <div className="schedule-app">
+      <div className="cal-menu-bar">
+        <div className="cal-menu-left">
           <h1>{calendar.name}</h1>
+          {viewMode === "weekly" && weekNav}
         </div>
-        <div className="topbar-actions">
+        <div className="cal-menu-right">
+          <select className="view-select" value={viewMode} onChange={e => setViewMode(e.target.value as ViewMode)}>
+            <option value="weekly">Weekly View</option>
+            <option value="daily">Daily View</option>
+            <option value="monthly">Monthly View</option>
+          </select>
           <button className="btn" onClick={openRebalanceModal} type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
             Rebalance
@@ -352,67 +325,67 @@ export default function CalendarView({
         </div>
       </div>
 
-      <section className="card">
-        <div className="card-header">
-          <div>
-            <div className="card-title">{calendar.name}</div>
-            <div className="card-subtitle">{calendar.start_date && calendar.due_date ? `Schedule Range: ${formatDateLabel(calendar.start_date)} to ${formatDateLabel(calendar.due_date)}` : "No date range set"}</div>
-          </div>
-          <div className="view-controls">
-            <select className="view-select" defaultValue="weekly">
-              <option value="weekly">Weekly View</option>
-              <option value="daily">Daily View</option>
-              <option value="monthly">Monthly View</option>
-            </select>
-            <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
-            <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
-            <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
-          </div>
+      <div className="cal-progress">
+        <div className="cal-progress-left">
+          <span>{progress.done}/{progress.total} tasks completed</span>
+          <div className="progress-track"><div className="progress-fill" style={{width:`${progress.pct}%`}}/></div>
         </div>
+        <span className="cal-days-left">{daysUntilExam} days until due date</span>
+      </div>
 
-        <div className="progress-row">
-          <div className="progress-left">
-            <div className="progress-label">{progress.done}/{progress.total} tasks completed</div>
-            <div className="progress-track"><div className="progress-fill" style={{width:`${progress.pct}%`}}/></div>
-          </div>
-          <div className="progress-days">{daysUntilExam} days until due date</div>
-        </div>
-
-        <div className="calendar-outer">
-          <div className="calendar-grid">
-            <div className="col-spacer"/>
-            {days.map(day=>{
-              const k=dateKey(day)
-              return <div className={`col-header${isSameDate(day,today)?" today":""}`} key={k}>
-                <div className="col-date">{SHORT_MONTHS[day.getMonth()]} {day.getDate()}</div>
-                <div className="col-day">{DAYS[day.getDay()]}</div>
-              </div>
-            })}
-            <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
-            {days.map(day=>{
-              const k=dateKey(day), dayTasks=tasks[k]||[], total=computeTotalTime(dayTasks)
-              return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
-                <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>
-                {dayTasks.map(task=>
-                  <div className={`task-card${task.done?" done":""}`} key={task.id}>
-                    <div className="task-top">
-                      <button className="task-check" onClick={()=>toggleTask(k,task.id)} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
-                        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
-                      </button>
-                      <div className="task-name">{task.name}</div>
+      <div className="cal-body">
+        {viewMode === "weekly" && (
+          <div className="calendar-outer">
+            <div className="calendar-grid">
+              <div className="col-spacer"/>
+              {days.map(day=>{
+                const k=dateKey(day)
+                return <div className={`col-header${isSameDate(day,today)?" today":""}`} key={k}>
+                  <div className="col-date">{SHORT_MONTHS[day.getMonth()]} {day.getDate()}</div>
+                  <div className="col-day">{DAYS[day.getDay()]}</div>
+                </div>
+              })}
+              <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
+              {days.map(day=>{
+                const k=dateKey(day), dayTasks=tasks[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
+                return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
+                  <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>
+                  {dayTasks.map(task=>
+                    <div className={`task-card${task.done?" done":""}`} key={task.id}>
+                      <div className="task-top">
+                        <button className="task-check" onClick={()=>toggleTask(k,task.id)} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
+                          <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+                        </button>
+                        <div className="task-name">{task.name}</div>
+                      </div>
+                      <div className="task-footer">
+                        <span className={`task-tag ${tagClass(task.tag)}`}>{tagLabel(task.tag)}</span>
+                        <span className="task-time">{task.time}</span>
+                      </div>
                     </div>
-                    <div className="task-footer">
-                      <span className={`task-tag ${tagClass(task.tag)}`}>{tagLabel(task.tag)}</span>
-                      <span className="task-time">{task.time}</span>
-                    </div>
-                  </div>
-                )}
-                {total ? <div className="day-total">Total Time: {total}</div> : null}
-              </div>
-            })}
+                  )}
+                  {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
+                </div>
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        )}
+        {viewMode === "monthly" && (
+          <MonthlyView
+            tasks={tasks}
+            onToggleTask={toggleTask}
+            onDeleteTask={deleteTask}
+            onAddTask={handleAddTask}
+          />
+        )}
+        {viewMode === "daily" && (
+          <DayView
+            tasks={tasks}
+            onToggleTask={toggleTask}
+            onAddTask={handleAddTask}
+          />
+        )}
+      </div>
 
       {/* Add task modal */}
       <div className={`modal-overlay${addingToDay?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setAddingToDay(null)}}>
@@ -420,8 +393,31 @@ export default function CalendarView({
           <h3>Add Task</h3>
           <label>Task Name</label>
           <input type="text" value={taskName} onChange={e=>setTaskName(e.target.value)} placeholder="e.g. Energy & Momentum Videos"/>
-          <label>Duration</label>
-          <input type="text" value={taskTime} onChange={e=>setTaskTime(e.target.value)} placeholder="e.g. 1h or 25min" required/>
+          <label>Subject</label>
+          <select value={taskTag} onChange={e=>setTaskTag(e.target.value as SubjectTag)}>
+            <option value="p">Physics</option>
+            <option value="bio">Biology</option>
+            <option value="rc">Reading Comp</option>
+            <option value="math">Math</option>
+            <option value="gen">General</option>
+          </select>
+          {viewMode === "daily" ? (
+            <div className="modal-row">
+              <div>
+                <label>Start Time</label>
+                <input type="time" value={taskStart} onChange={e=>setTaskStart(e.target.value)} />
+              </div>
+              <div>
+                <label>Duration</label>
+                <input type="text" value={taskTime} onChange={e=>setTaskTime(e.target.value)} placeholder="e.g. 1h or 45min" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <label>Duration</label>
+              <input type="text" value={taskTime} onChange={e=>setTaskTime(e.target.value)} placeholder="e.g. 1h or 25min" required/>
+            </>
+          )}
           <div className="modal-actions">
             <button className="btn-cancel" onClick={()=>setAddingToDay(null)} type="button">Cancel</button>
             <button className="btn-primary" onClick={saveTask} type="button">Add Task</button>
@@ -514,6 +510,6 @@ export default function CalendarView({
       </aside>
 
       <div className={`toast${toast?" show":""}`}>{toast}</div>
-    </main>
+    </div>
   )
 }

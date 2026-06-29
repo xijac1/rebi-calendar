@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server"
-import { redirect, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import CalendarView from "../CalendarView"
 
 export type TaskRow = {
@@ -30,8 +30,6 @@ export default async function CalendarPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
 
   const { data: calendar } = await supabase
     .from("calendars")

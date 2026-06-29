@@ -1,5 +1,4 @@
 import { createClient } from "@/utils/supabase/server"
-import { redirect } from "next/navigation"
 import DashboardContent from "./DashboardContent"
 
 export type CalendarRow = {
@@ -14,10 +13,6 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect("/login")
-  }
-
   const { data: calendars } = await supabase
     .from("calendars")
     .select("id, name, start_date, due_date, created_at")
@@ -25,7 +20,6 @@ export default async function DashboardPage() {
 
   return (
     <DashboardContent
-      userEmail={user.email ?? "User"}
       initialCalendars={(calendars as CalendarRow[]) ?? []}
     />
   )
