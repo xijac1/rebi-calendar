@@ -1,5 +1,5 @@
-import ScheduleApp from "./components/ScheduleApp";
+import WelcomePage from "./WelcomeContent"
 
 export default function Home() {
-  return <ScheduleApp />;
+  return <WelcomePage />
 }
