@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type ReactNode } from "react"
 import type { Task, TasksByDate, SubjectTag } from "./helpers"
 import {
   dateKey, isSameDate, formatDateLabel, tagLabel, tagColor,
@@ -12,9 +12,10 @@ interface MonthlyViewProps {
   onToggleTask: (dayKey: string, taskId: string) => void
   onDeleteTask: (dayKey: string, taskId: string) => void
   onAddTask: () => void
+  rebalanceButton?: ReactNode
 }
 
-export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTask }: MonthlyViewProps) {
+export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTask, rebalanceButton }: MonthlyViewProps) {
   const today = useMemo(() => new Date(), [])
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -64,14 +65,57 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
 
   const selectedDateTasks = selectedDayKey ? tasks[selectedDayKey] || [] : []
 
+  const monthStats = useMemo(() => {
+    const monthKeys = cells.filter(c => !c.out).map(c => c.key)
+    const all = monthKeys.flatMap(k => tasks[k] || [])
+    const total = all.length
+    const done = all.filter(t => t.done).length
+    const totalMins = all.reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
+    const pct = total ? Math.round((done / total) * 100) : 0
+    return { total, done, totalMins, pct }
+  }, [cells, tasks])
+
   return (
     <div className="monthly-view">
-      <div className="monthly-header">
-        <span className="monthly-title">{MONTH_NAMES[viewMonth]} {viewYear}</span>
-        <div className="monthly-nav">
+      <div className="topbar">
+        <div className="topbar-left">
+          <span className="monthly-title">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+        </div>
+        <div className="topbar-center">
           <button className="today-btn" onClick={goToday} type="button">Today</button>
           <button className="nav-btn" onClick={() => navigate(-1)} type="button">&lt;</button>
           <button className="nav-btn" onClick={() => navigate(1)} type="button">&gt;</button>
+          {rebalanceButton}
+        </div>
+        <div className="day-stats">
+          <div className="day-stat">
+            <span className="day-stat-label">Total</span>
+            <span className="day-stat-value">{monthStats.total}</span>
+          </div>
+          <div className="day-stat-divider" />
+          <div className="day-stat">
+            <span className="day-stat-label">Done</span>
+            <span className="day-stat-value day-stat-done">{monthStats.done}</span>
+          </div>
+          <div className="day-stat-divider" />
+          <div className="day-stat">
+            <span className="day-stat-label">Study Time</span>
+            <span className="day-stat-value">{monthStats.totalMins ? formatMinutes(monthStats.totalMins) : "—"}</span>
+          </div>
+          <div className="day-stat-divider" />
+          <div className="day-stat">
+            <span className="day-stat-label">Progress</span>
+            <div className="day-stat-progress-row">
+              <div className="progress-track"><div className="progress-fill" style={{ width: `${monthStats.pct}%` }} /></div>
+              <span className="day-stat-pct">{monthStats.pct}%</span>
+            </div>
+          </div>
+        </div>
+        <div className="topbar-right">
+          <button className="btn" onClick={onAddTask} type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            Add Task
+          </button>
         </div>
       </div>
 

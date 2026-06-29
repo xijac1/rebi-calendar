@@ -7,7 +7,7 @@ import type { TaskRow, DayOffRow, CalendarRow } from "./[id]/page"
 import type { Task, TasksByDate, SubjectTag } from "./views/helpers"
 import {
   dateKey, dateFromKey, formatDateLabel, isSameDate,
-  parseDurationToMinutes, formatMinutes, getWeekStart,
+  parseDurationToMinutes, formatMinutes, getWeekStart, MONTH_NAMES,
   tagLabel, tagClass,
 } from "./views/helpers"
 import MonthlyView from "./views/MonthlyView"
@@ -124,20 +124,6 @@ export default function CalendarView({
     const diff = Math.floor((currentWeekStart.getTime()-start.getTime())/(7*86400000))
     return Math.max(1,diff+1)
   },[currentWeekStart, calendar.start_date])
-
-  const progress = useMemo(() => {
-    const all = Object.values(tasks).flat()
-    const done = all.filter(t=>t.done).length
-    const pct = all.length?(done/all.length)*100:0
-    return {done,total:all.length,pct}
-  },[tasks])
-
-  const daysUntilExam = useMemo(() => {
-    const due = calendar.due_date
-    if (!due) return 0
-    const diff = Math.ceil((dateFromKey(due).getTime()-today.getTime())/86400000)
-    return Math.max(0,diff)
-  },[today, calendar.due_date])
 
   const rebalancePlan = useMemo(() => {
     if (!rebalanceStartDate||!rebalanceExamDate||dateFromKey(rebalanceStartDate)>dateFromKey(rebalanceExamDate)) return null
@@ -293,31 +279,35 @@ export default function CalendarView({
     openModal(dateKey(now))
   }
 
-  const weekNav = (
-    <div className="cal-menu-nav">
-      <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
-      <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
-      <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
-    </div>
+  const weekLabel = `${MONTH_NAMES[currentWeekStart.getMonth()]} ${currentWeekStart.getFullYear()}`
+
+  const weekStats = useMemo(() => {
+    const dayKeys = days.map(d => dateKey(d))
+    const all = dayKeys.flatMap(k => tasks[k] || [])
+    const total = all.length
+    const done = all.filter(t => t.done).length
+    const totalMins = all.reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
+    const pct = total ? Math.round((done / total) * 100) : 0
+    return { total, done, totalMins, pct }
+  }, [days, tasks])
+
+  const rebalanceButton = (
+    <button className="btn rebalance-btn" onClick={openRebalanceModal} type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      Rebalance
+    </button>
   )
 
   return (
     <div className="schedule-app">
-      <div className="cal-menu-bar">
-        <div className="cal-menu-left">
-          <h1>{calendar.name}</h1>
-          {viewMode === "weekly" && weekNav}
-        </div>
-        <div className="cal-menu-right">
+      <div className="persistent-topbar">
+        <h1 className="persistent-title">{calendar.name}</h1>
+        <div className="persistent-actions">
           <select className="view-select" value={viewMode} onChange={e => setViewMode(e.target.value as ViewMode)}>
             <option value="weekly">Weekly View</option>
             <option value="daily">Daily View</option>
             <option value="monthly">Monthly View</option>
           </select>
-          <button className="btn" onClick={openRebalanceModal} type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-            Rebalance
-          </button>
           <button className="btn" onClick={() => setSettingsOpen(true)} type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             Settings
@@ -325,16 +315,53 @@ export default function CalendarView({
         </div>
       </div>
 
-      <div className="cal-progress">
-        <div className="cal-progress-left">
-          <span>{progress.done}/{progress.total} tasks completed</span>
-          <div className="progress-track"><div className="progress-fill" style={{width:`${progress.pct}%`}}/></div>
-        </div>
-        <span className="cal-days-left">{daysUntilExam} days until due date</span>
-      </div>
-
       <div className="cal-body">
         {viewMode === "weekly" && (
+          <>
+          <div className="topbar">
+            <div className="topbar-left">
+              <span className="monthly-title">{weekLabel}</span>
+            </div>
+            <div className="topbar-center">
+              <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
+              <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
+              <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
+              <button className="btn" onClick={openRebalanceModal} type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                Rebalance
+              </button>
+            </div>
+            <div className="day-stats">
+              <div className="day-stat">
+                <span className="day-stat-label">Total</span>
+                <span className="day-stat-value">{weekStats.total}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Done</span>
+                <span className="day-stat-value day-stat-done">{weekStats.done}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Study Time</span>
+                <span className="day-stat-value">{weekStats.totalMins ? formatMinutes(weekStats.totalMins) : "—"}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Progress</span>
+                <div className="day-stat-progress-row">
+                  <div className="progress-track"><div className="progress-fill" style={{ width: `${weekStats.pct}%` }} /></div>
+                  <span className="day-stat-pct">{weekStats.pct}%</span>
+                </div>
+              </div>
+            </div>
+            <div className="topbar-right">
+              <button className="btn" onClick={handleAddTask} type="button">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                Add Task
+              </button>
+            </div>
+          </div>
           <div className="calendar-outer">
             <div className="calendar-grid">
               <div className="col-spacer"/>
@@ -369,6 +396,7 @@ export default function CalendarView({
               })}
             </div>
           </div>
+          </>
         )}
         {viewMode === "monthly" && (
           <MonthlyView
@@ -376,6 +404,7 @@ export default function CalendarView({
             onToggleTask={toggleTask}
             onDeleteTask={deleteTask}
             onAddTask={handleAddTask}
+            rebalanceButton={rebalanceButton}
           />
         )}
         {viewMode === "daily" && (
@@ -383,6 +412,7 @@ export default function CalendarView({
             tasks={tasks}
             onToggleTask={toggleTask}
             onAddTask={handleAddTask}
+            rebalanceButton={rebalanceButton}
           />
         )}
       </div>

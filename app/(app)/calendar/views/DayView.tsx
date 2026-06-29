@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, type ReactNode } from "react"
 import type { Task, TasksByDate, SubjectTag } from "./helpers"
 import {
   dateKey, isSameDate, tagLabel, tagColor,
@@ -13,9 +13,10 @@ interface DayViewProps {
   tasks: TasksByDate
   onToggleTask: (dayKey: string, taskId: string) => void
   onAddTask: () => void
+  rebalanceButton?: ReactNode
 }
 
-export default function DayView({ tasks, onToggleTask, onAddTask }: DayViewProps) {
+export default function DayView({ tasks, onToggleTask, onAddTask, rebalanceButton }: DayViewProps) {
   const today = useMemo(() => new Date(), [])
   const [viewDate, setViewDate] = useState(today)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -80,49 +81,49 @@ export default function DayView({ tasks, onToggleTask, onAddTask }: DayViewProps
 
   return (
     <div className="day-view">
-      <div className="day-topbar">
-        <div className="day-topbar-left">
+      <div className="topbar">
+        <div className="topbar-left">
           <span className={`day-big${isToday ? " today" : ""}`}>{viewDate.getDate()}</span>
           <div className="day-meta">
             <span className="day-weekday">{DAYS[viewDate.getDay()]}</span>
             <span className="day-month">{SHORT_MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}</span>
           </div>
         </div>
-        <div className="day-topbar-center">
+        <div className="topbar-center">
           <button className="nav-btn" onClick={() => navigate(-1)} type="button">&lt;</button>
           <button className="today-btn" onClick={goToday} type="button">Today</button>
           <button className="nav-btn" onClick={() => navigate(1)} type="button">&gt;</button>
+          {rebalanceButton}
         </div>
-        <div className="day-topbar-right">
+        <div className="day-stats">
+          <div className="day-stat">
+            <span className="day-stat-label">Total</span>
+            <span className="day-stat-value">{stats.total}</span>
+          </div>
+          <div className="day-stat-divider" />
+          <div className="day-stat">
+            <span className="day-stat-label">Done</span>
+            <span className="day-stat-value day-stat-done">{stats.done}</span>
+          </div>
+          <div className="day-stat-divider" />
+          <div className="day-stat">
+            <span className="day-stat-label">Study Time</span>
+            <span className="day-stat-value">{stats.totalMins ? formatMinutes(stats.totalMins) : "—"}</span>
+          </div>
+          <div className="day-stat-divider" />
+          <div className="day-stat">
+            <span className="day-stat-label">Progress</span>
+            <div className="day-stat-progress-row">
+              <div className="progress-track"><div className="progress-fill" style={{ width: `${stats.pct}%` }} /></div>
+              <span className="day-stat-pct">{stats.pct}%</span>
+            </div>
+          </div>
+        </div>
+        <div className="topbar-right">
           <button className="btn" onClick={onAddTask} type="button">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             Add Task
           </button>
-        </div>
-      </div>
-
-      <div className="day-stats">
-        <div className="day-stat">
-          <span className="day-stat-label">Total</span>
-          <span className="day-stat-value">{stats.total}</span>
-        </div>
-        <div className="day-stat-divider" />
-        <div className="day-stat">
-          <span className="day-stat-label">Done</span>
-          <span className="day-stat-value day-stat-done">{stats.done}</span>
-        </div>
-        <div className="day-stat-divider" />
-        <div className="day-stat">
-          <span className="day-stat-label">Study Time</span>
-          <span className="day-stat-value">{stats.totalMins ? formatMinutes(stats.totalMins) : "—"}</span>
-        </div>
-        <div className="day-stat-divider" />
-        <div className="day-stat">
-          <span className="day-stat-label">Progress</span>
-          <div className="day-stat-progress-row">
-            <div className="progress-track"><div className="progress-fill" style={{ width: `${stats.pct}%` }} /></div>
-            <span className="day-stat-pct">{stats.pct}%</span>
-          </div>
         </div>
       </div>
 
