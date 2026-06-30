@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, type ReactNode } from "react"
-import type { Task, TasksByDate, SubjectTag } from "./helpers"
+import type { Task, TasksByDate } from "./helpers"
 import {
   dateKey, isSameDate, formatDateLabel, tagLabel, tagColor,
   MONTH_NAMES, SHORT_MONTHS, SHORT_DAYS, formatMinutes, parseDurationToMinutes,
@@ -11,11 +11,13 @@ interface MonthlyViewProps {
   tasks: TasksByDate
   onToggleTask: (dayKey: string, taskId: string) => void
   onDeleteTask: (dayKey: string, taskId: string) => void
-  onAddTask: () => void
+  onAddTask?: () => void
+  onEditTask?: (dayKey: string, task: Task) => void
   rebalanceButton?: ReactNode
+  isViewAll?: boolean
 }
 
-export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTask, rebalanceButton }: MonthlyViewProps) {
+export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTask, onEditTask, rebalanceButton, isViewAll }: MonthlyViewProps) {
   const today = useMemo(() => new Date(), [])
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -116,10 +118,12 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
           </div>
         </div>
         <div className="topbar-right">
-          <button className="btn" onClick={onAddTask} type="button">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            Add Task
-          </button>
+          {onAddTask && (
+            <button className="btn" onClick={onAddTask} type="button">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Add Task
+            </button>
+          )}
         </div>
       </div>
 
@@ -146,9 +150,10 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
               </div>
               <div className="task-pills">
                 {visible.map(task => (
-                  <span className={`task-pill pill-${task.tag}`} key={task.id} title={task.name}>
+                  <span className={`task-pill pill-${task.tag}`} key={task.id} title={task.name} onClick={e => { e.stopPropagation(); onEditTask?.(cell.key, task) }}>
                     <span className="pill-dot" style={{ background: tagColor(task.tag) }} />
                     <span className="pill-name">{task.name}</span>
+                    {isViewAll && task.calendarName && <span className="pill-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
                   </span>
                 ))}
                 {more > 0 && <span className="more-count preserver">+{more} more</span>}
@@ -158,13 +163,7 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
         })}
       </div>
 
-      <div className="legend">
-        <div className="legend-item"><div className="legend-dot" style={{background:tagColor("p")}} /> Physics</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:tagColor("bio")}} /> Biology</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:tagColor("rc")}} /> Reading Comp</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:tagColor("math")}} /> Math</div>
-        <div className="legend-item"><div className="legend-dot" style={{background:tagColor("gen")}} /> General</div>
-      </div>
+
 
       {/* Day detail modal */}
       {selectedDayKey && (
@@ -176,18 +175,26 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
                 <p className="monthly-no-tasks">No tasks for this day</p>
               )}
               {selectedDateTasks.map(task => (
-                <div className={`monthly-task-row${task.done ? " done" : ""}`} key={task.id}>
-                  <button className="task-check" onClick={() => onToggleTask(selectedDayKey, task.id)} type="button">
-                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+                <div className={`day-sidebar-task${task.done ? " done" : ""}`} key={task.id}>
+                  <button className="sidebar-check" onClick={() => onToggleTask(selectedDayKey, task.id)} type="button">
+                    {task.done && <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>}
                   </button>
-                  <span className="modal-tag-dot" style={{ background: tagColor(task.tag) }} />
-                  <span className="modal-task-name">{task.name} <span className="modal-task-time">{task.time}</span></span>
+                  <div className="day-sidebar-task-info">
+                    <div className="day-sidebar-task-name">{task.name}</div>
+                    <div className="day-sidebar-task-foot">
+                      <span className="day-sidebar-tag" style={{ background: `${tagColor(task.tag)}22`, color: tagColor(task.tag) }}>{tagLabel(task.tag)}</span>
+                      {isViewAll && task.calendarName && <span className="sidebar-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
+                      <span className="day-sidebar-time">{task.time}</span>
+                    </div>
+                  </div>
                   <button className="modal-delete" onClick={() => onDeleteTask(selectedDayKey, task.id)} type="button">&times;</button>
                 </div>
               ))}
             </div>
             <div className="monthly-modal-form">
-              <button className="btn-primary" onClick={() => { setSelectedDayKey(null); onAddTask() }} type="button">Add Task</button>
+              {onAddTask && (
+                <button className="btn-primary" onClick={() => { setSelectedDayKey(null); onAddTask() }} type="button">Add Task</button>
+              )}
               <button className="btn-cancel" onClick={() => setSelectedDayKey(null)} type="button">Close</button>
             </div>
           </div>

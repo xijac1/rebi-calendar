@@ -8,12 +8,21 @@ import type { Task, TasksByDate, SubjectTag } from "./views/helpers"
 import {
   dateKey, dateFromKey, formatDateLabel, isSameDate,
   parseDurationToMinutes, formatMinutes, getWeekStart,
-  MONTH_NAMES, SHORT_MONTHS, DAYS,
-  tagLabel, tagClass,
+  MONTH_NAMES, SHORT_MONTHS, DAYS, tagLabel,
 } from "./views/helpers"
 import MonthlyView from "./views/MonthlyView"
 import DayView from "./views/DayView"
 
+const THEMES: Record<string, { accent: string; accentBg: string; progressStart: string; progressEnd: string; label: string }> = {
+  rose:    { accent: "#dd0426", accentBg: "#2f0505", progressStart: "#a855f7", progressEnd: "#f97316", label: "Rose" },
+  blue:    { accent: "#3b82f6", accentBg: "#0a1e3d", progressStart: "#6366f1", progressEnd: "#06b6d4", label: "Blue" },
+  green:   { accent: "#22c55e", accentBg: "#052e16", progressStart: "#10b981", progressEnd: "#84cc16", label: "Green" },
+  purple:  { accent: "#a855f7", accentBg: "#1e1b4b", progressStart: "#d946ef", progressEnd: "#f97316", label: "Purple" },
+  amber:   { accent: "#f59e0b", accentBg: "#2a1f04", progressStart: "#f97316", progressEnd: "#eab308", label: "Amber" },
+  cyan:    { accent: "#06b6d4", accentBg: "#042f3d", progressStart: "#0891b2", progressEnd: "#06b6d4", label: "Cyan" },
+}
+
+type CalendarInfo = { id: string; name: string; color_theme: string | null }
 type RebalanceView = "clean" | "detailed" | "compact"
 type ViewMode = "weekly" | "daily" | "monthly"
 
@@ -73,24 +82,38 @@ export default function CalendarView({
   calendar,
   initialTasks,
   initialDaysOff,
+  allCalendars,
 }: {
   calendar: CalendarRow
   initialTasks: TaskRow[]
   initialDaysOff: DayOffRow[]
+  allCalendars?: CalendarInfo[]
 }) {
   const supabase = createClient()
   const router = useRouter()
+  const [calLookup] = useState(() => {
+    const map = new Map<string, CalendarInfo>()
+    if (allCalendars) allCalendars.forEach(c => map.set(c.id, c))
+    return map
+  })
   const [tasks, setTasks] = useState<TasksByDate>(() => {
+    const lookup = new Map<string, CalendarInfo>()
+    if (allCalendars) allCalendars.forEach(c => lookup.set(c.id, c))
     const grouped: TasksByDate = {}
     initialTasks.forEach((t) => {
       const key = t.scheduled_date || "unscheduled"
       if (!grouped[key]) grouped[key] = []
+      const cal = t.calendar_id ? lookup.get(t.calendar_id) : undefined
+      const calTheme = cal ? THEMES[cal.color_theme || "rose"] : undefined
       grouped[key].push({
         id: t.id,
         name: t.title,
-        tag: (t.subject as SubjectTag) || "p",
-        time: t.duration_minutes ? `${t.duration_minutes}min` : "30min",
+        tag: (t.subject as SubjectTag) || "",
+        time: t.duration_minutes ? formatMinutes(t.duration_minutes) : "",
         done: t.completed,
+        calendarId: t.calendar_id || undefined,
+        calendarName: cal?.name,
+        calendarColor: calTheme?.accent,
       })
     })
     return grouped
@@ -101,8 +124,9 @@ export default function CalendarView({
   const [viewMode, setViewMode] = useState<ViewMode>("weekly")
   const [currentWeekStart, setCurrentWeekStart] = useState(() => getWeekStart(new Date()))
   const [addingToDay, setAddingToDay] = useState<string | null>(null)
+  const [editingTask, setEditingTask] = useState<{ dayKey: string; task: Task } | null>(null)
   const [taskName, setTaskName] = useState("")
-  const [taskTag, setTaskTag] = useState<SubjectTag>("p")
+  const [taskTag, setTaskTag] = useState<SubjectTag>("")
   const [taskTime, setTaskTime] = useState("")
   const [taskStart, setTaskStart] = useState("09:00")
   const [dayOffInput, setDayOffInput] = useState("")
@@ -113,6 +137,17 @@ export default function CalendarView({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState("")
 
+  const isViewAll = calendar.id === "all"
+  const [colorTheme, setColorTheme] = useState(calendar.color_theme || "rose")
+  const theme = THEMES[colorTheme] || THEMES.rose
+  const themeVars = {
+    "--today-bg": theme.accentBg,
+    "--today-border": theme.accent,
+    "--cal-accent": theme.accent,
+    "--cal-accent-bg": theme.accentBg,
+    "--cal-progress-start": theme.progressStart,
+    "--cal-progress-end": theme.progressEnd,
+  } as React.CSSProperties
   const today = useMemo(() => new Date(), [])
 
   const days = useMemo(() => Array.from({length:7},(_,i)=>{const d=new Date(currentWeekStart);d.setDate(d.getDate()+i);return d}),[currentWeekStart])
@@ -152,7 +187,7 @@ export default function CalendarView({
 
   useEffect(() => {
     function closeOnEscape(e: KeyboardEvent) {
-      if (e.key==="Escape") { setAddingToDay(null); setSettingsOpen(false); setRebalanceOpen(false) }
+      if (e.key==="Escape") { setAddingToDay(null); setEditingTask(null); setSettingsOpen(false); setRebalanceOpen(false) }
     }
     document.addEventListener("keydown",closeOnEscape)
     return ()=>document.removeEventListener("keydown",closeOnEscape)
@@ -162,16 +197,14 @@ export default function CalendarView({
     const { data, error } = await supabase.from("tasks").insert({
       calendar_id: calendar.id,
       title,
-      subject,
+      subject: subject || null,
       duration_minutes: durationMinutes,
       scheduled_date: dayKey,
       completed: false,
     }).select("id").single()
     if (error) return null
     const taskId = data.id
-    const timeStr = durationMinutes >= 60
-      ? `${Math.floor(durationMinutes/60)}h${durationMinutes%60 ? ` ${durationMinutes%60}min` : ""}`
-      : `${durationMinutes}min`
+    const timeStr = formatMinutes(durationMinutes)
     setTasks(prev => ({
       ...prev,
       [dayKey]: [...(prev[dayKey]||[]), { id: taskId, name: title, tag: subject, time: timeStr, start: taskStart, done: false }]
@@ -244,17 +277,34 @@ export default function CalendarView({
   }
 
   function openModal(dayKey: string) {
-    setAddingToDay(dayKey); setTaskName(""); setTaskTag("p"); setTaskTime(""); setTaskStart("09:00")
+    setEditingTask(null); setAddingToDay(dayKey); setTaskName(""); setTaskTag(""); setTaskTime(""); setTaskStart("09:00")
+  }
+
+  function openEditModal(dayKey: string, task: Task) {
+    setAddingToDay(null); setEditingTask({ dayKey, task }); setTaskName(task.name); setTaskTag(task.tag); setTaskTime(task.time); setTaskStart(task.start || "09:00")
   }
 
   async function saveTask() {
     const name = taskName.trim(), time = taskTime.trim()
-    if (!addingToDay||!name) return
+    const dayKey = editingTask ? editingTask.dayKey : addingToDay
+    if (!dayKey||!name) return
     const mins = parseDurationToMinutes(time)
     if (!mins) { showToast("Enter a valid duration like 1h or 25min"); return }
-    await addTaskToDb(addingToDay, name, taskTag, mins)
-    setAddingToDay(null)
-    showToast("Task added")
+
+    if (editingTask) {
+      await supabase.from("tasks").update({ title: name, subject: taskTag || null, duration_minutes: mins }).eq("id", editingTask.task.id)
+      const timeStr = formatMinutes(mins)
+      setTasks(prev => ({
+        ...prev,
+        [editingTask.dayKey]: (prev[editingTask.dayKey]||[]).map(t => t.id===editingTask.task.id ? {...t, name, tag: taskTag, time: timeStr} : t)
+      }))
+      setEditingTask(null)
+      showToast("Task updated")
+    } else {
+      await addTaskToDb(dayKey, name, taskTag, mins)
+      setAddingToDay(null)
+      showToast("Task added")
+    }
   }
 
   function toggleTask(dayKey: string, id: string) {
@@ -263,7 +313,8 @@ export default function CalendarView({
     toggleTaskDone(dayKey, id, task.done)
   }
 
-  function deleteTask(dayKey: string, id: string) {
+  async function deleteTask(dayKey: string, id: string) {
+    await supabase.from("tasks").delete().eq("id", id)
     setTasks(prev => {
       const next = { ...prev }
       next[dayKey] = (next[dayKey] || []).filter(t => t.id !== id)
@@ -275,6 +326,10 @@ export default function CalendarView({
   function handleAddTask() {
     const now = new Date()
     openModal(dateKey(now))
+  }
+
+  function handleEditTask(dayKey: string, task: Task) {
+    openEditModal(dayKey, task)
   }
 
   const weekStats = useMemo(() => {
@@ -295,7 +350,7 @@ export default function CalendarView({
   )
 
   return (
-    <div className="schedule-app">
+    <div className="schedule-app" style={themeVars}>
       <div className="persistent-topbar">
         <h1 className="persistent-title">{calendar.name}</h1>
         <div className="persistent-actions">
@@ -305,9 +360,9 @@ export default function CalendarView({
             <option value="monthly">Monthly View</option>
           </select>
           <button className="btn" onClick={() => setSettingsOpen(true)} type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Settings
-          </button>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Settings
+            </button>
         </div>
       </div>
 
@@ -326,10 +381,12 @@ export default function CalendarView({
               <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
               <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
               <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
-              <button className="btn" onClick={openRebalanceModal} type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-                Rebalance
-              </button>
+              {!isViewAll && (
+                <button className="btn" onClick={openRebalanceModal} type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                  Rebalance
+                </button>
+              )}
             </div>
             <div className="day-stats">
               <div className="day-stat">
@@ -356,10 +413,12 @@ export default function CalendarView({
               </div>
             </div>
             <div className="topbar-right">
-              <button className="btn" onClick={handleAddTask} type="button">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                Add Task
-              </button>
+              {!isViewAll && (
+                <button className="btn" onClick={handleAddTask} type="button">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  Add Task
+                </button>
+              )}
             </div>
           </div>
           <div className="calendar-outer">
@@ -377,20 +436,21 @@ export default function CalendarView({
                 const k=dateKey(day), dayTasks=tasks[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
                 return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
                   {dayTasks.map(task=>
-                    <div className={`task-card${task.done?" done":""}`} key={task.id}>
+                    <div className={`task-card${task.done?" done":""}`} key={task.id} onClick={()=>handleEditTask(k,task)}>
                       <div className="task-top">
                         <button className="task-check" onClick={()=>toggleTask(k,task.id)} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
                           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
                         </button>
                         <div className="task-name">{task.name}</div>
+                        {isViewAll && task.calendarName && <span className="task-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
                       </div>
                       <div className="task-footer">
-                        <span className={`task-tag ${tagClass(task.tag)}`}>{tagLabel(task.tag)}</span>
+                        <span className="task-tag">{tagLabel(task.tag)}</span>
                         <span className="task-time">{task.time}</span>
                       </div>
                     </div>
                   )}
-                  <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>
+                  {!isViewAll && <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>}
                   {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
                 </div>
               })}
@@ -403,34 +463,39 @@ export default function CalendarView({
             tasks={tasks}
             onToggleTask={toggleTask}
             onDeleteTask={deleteTask}
-            onAddTask={handleAddTask}
-            rebalanceButton={rebalanceButton}
+            onAddTask={isViewAll ? undefined : handleAddTask}
+            onEditTask={handleEditTask}
+            rebalanceButton={isViewAll ? undefined : rebalanceButton}
+            isViewAll={isViewAll}
           />
         )}
         {viewMode === "daily" && (
           <DayView
             tasks={tasks}
             onToggleTask={toggleTask}
-            onAddTask={handleAddTask}
-            rebalanceButton={rebalanceButton}
+            onAddTask={isViewAll ? undefined : handleAddTask}
+            onEditTask={handleEditTask}
+            rebalanceButton={isViewAll ? undefined : rebalanceButton}
+            isViewAll={isViewAll}
           />
         )}
       </div>
 
-      {/* Add task modal */}
-      <div className={`modal-overlay${addingToDay?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setAddingToDay(null)}}>
+      {/* Add / Edit task modal */}
+      <div className={`modal-overlay${addingToDay||editingTask?" open":""}`} onClick={e=>{if(e.target===e.currentTarget){setAddingToDay(null);setEditingTask(null)}}}>
         <div className="modal">
-          <h3>Add Task</h3>
+          <div className="modal-header-row">
+            <h3>{editingTask ? "Edit Task" : "Add Task"}</h3>
+            {isViewAll && editingTask?.task.calendarId && (() => {
+              const cal = calLookup.get(editingTask.task.calendarId!)
+              const calTheme = cal ? THEMES[cal.color_theme || "rose"] : THEMES.rose
+              return cal ? <span className="modal-cal-badge" style={{ background: calTheme.accent }}>{cal.name}</span> : null
+            })()}
+          </div>
           <label>Task Name</label>
           <input type="text" value={taskName} onChange={e=>setTaskName(e.target.value)} placeholder="e.g. Energy & Momentum Videos"/>
-          <label>Subject</label>
-          <select value={taskTag} onChange={e=>setTaskTag(e.target.value as SubjectTag)}>
-            <option value="p">Physics</option>
-            <option value="bio">Biology</option>
-            <option value="rc">Reading Comp</option>
-            <option value="math">Math</option>
-            <option value="gen">General</option>
-          </select>
+          <label>Type</label>
+          <input type="text" value={taskTag} onChange={e=>setTaskTag(e.target.value)} placeholder="e.g. Physics, Math, etc." />
           {viewMode === "daily" ? (
             <div className="modal-row">
               <div>
@@ -449,8 +514,9 @@ export default function CalendarView({
             </>
           )}
           <div className="modal-actions">
-            <button className="btn-cancel" onClick={()=>setAddingToDay(null)} type="button">Cancel</button>
-            <button className="btn-primary" onClick={saveTask} type="button">Add Task</button>
+            {editingTask && <button className="btn-delete" onClick={async ()=>{await deleteTask(editingTask.dayKey, editingTask.task.id);setEditingTask(null);showToast("Task deleted")}} type="button">Delete</button>}
+            <button className="btn-cancel" onClick={()=>{setAddingToDay(null);setEditingTask(null)}} type="button">Cancel</button>
+            <button className="btn-primary" onClick={saveTask} type="button">{editingTask ? "Update" : "Add Task"}</button>
           </div>
         </div>
       </div>
@@ -518,24 +584,29 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* Settings panel */}
       <aside className={`settings-panel${settingsOpen?" open":""}`}>
         <button className="settings-close" onClick={()=>setSettingsOpen(false)} type="button">&times;</button>
         <h3>Settings</h3>
         <div className="settings-row">
-          <label>Schedule Name</label>
-          <input type="text" defaultValue={calendar.name}/>
-        </div>
-        <div className="settings-row">
-          <label>Start Date</label>
-          <input type="date" defaultValue={calendar.start_date||""}/>
-        </div>
-        <div className="settings-row">
-          <label>End Date</label>
-          <input type="date" defaultValue={calendar.due_date||""}/>
-        </div>
-        <div className="settings-actions">
-          <button className="btn-primary settings-save" onClick={()=>{setSettingsOpen(false);showToast("Settings saved")}} type="button">Save Settings</button>
+          <label>Color Theme</label>
+          <div className="theme-grid">
+            {Object.entries(THEMES).map(([key, t]) => (
+              <button
+                key={key}
+                className={`theme-swatch${colorTheme === key ? " selected" : ""}`}
+                style={{ "--swatch": t.accent } as React.CSSProperties}
+                onClick={async () => {
+                  setColorTheme(key)
+                  if (!isViewAll) {
+                    await supabase.from("calendars").update({ color_theme: key }).eq("id", calendar.id)
+                  }
+                  showToast(`Theme changed to ${t.label}`)
+                }}
+                type="button"
+                title={t.label}
+              />
+            ))}
+          </div>
         </div>
       </aside>
 

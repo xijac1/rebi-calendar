@@ -16,8 +16,8 @@
   --accent-math: #fb923c;
   --progress-start: #a855f7;
   --progress-end: #f97316;
-  --today-bg: #1e1e2e;
-  --today-border: #6366f1;
+  --today-bg: #2f0505;
+  --today-border: #dd0426;
   --btn-bg: #262626;
   --btn-hover: #333;
   --radius: 10px;
@@ -58,7 +58,7 @@ button, input, select { font: inherit; }
   min-height: 0;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  /* border-radius: var(--radius); */
   background: var(--surface);
 }
 
@@ -73,7 +73,7 @@ button, input, select { font: inherit; }
   align-items: center;
   flex-wrap: wrap;
   padding: 18px 0 14px;
-  border-bottom: 1px solid var(--border);
+  /* border-bottom: 1px solid var(--border); */
   flex-shrink: 0;
   gap: 12px 24px;
 }
@@ -83,7 +83,7 @@ button, input, select { font: inherit; }
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: var(--surface);
+  background: #161616;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -385,6 +385,48 @@ button, input, select { font: inherit; }
   border-radius: 4px;
 }
 
+.task-cal-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.pill-cal-badge {
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.2px;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.modal-cal-badge-sm {
+  font-size: 9px;
+  font-weight: 600;
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-cal-badge {
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+
 .tag-p { background: rgba(139,124,248,0.18); color: var(--accent-p); }
 .tag-bio { background: rgba(221,4,38,0.15); color: var(--accent-bio); }
 .tag-rc { background: rgba(56,189,248,0.15); color: var(--accent-rc); }
@@ -426,6 +468,13 @@ button, input, select { font: inherit; }
 
 .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
 
+.modal-header-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.modal-header-row h3 { margin-bottom: 0; }
+.modal-cal-badge {
+  font-size: 10px; font-weight: 600; color: #fff; padding: 2px 8px;
+  border-radius: 4px; white-space: nowrap; letter-spacing: 0.3px;
+}
+
 .modal label {
   display: block;
   font-size: 12px;
@@ -445,6 +494,7 @@ button, input, select { font: inherit; }
 }
 
 .modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.modal-actions .btn-delete { margin-right: auto; }
 
 .btn-primary {
   padding: 8px 16px;
@@ -458,6 +508,10 @@ button, input, select { font: inherit; }
   transition: opacity 0.15s;
 }
 
+.schedule-app .btn-primary {
+  background: var(--cal-accent, var(--accent-p));
+}
+
 .btn-primary:hover { opacity: 0.85; }
 
 .btn-cancel {
@@ -469,6 +523,20 @@ button, input, select { font: inherit; }
   font-size: 13px;
   cursor: pointer;
 }
+
+.btn-delete {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #3a0f0f;
+  color: #ff4444;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-delete:hover { background: #4f1515; }
 
 .rebalance-overlay {
   background: rgba(0,0,0,0.72);
@@ -786,6 +854,29 @@ button, input, select { font: inherit; }
 .settings-actions { margin-top: 20px; }
 .settings-save { width: 100%; }
 
+.theme-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.theme-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--swatch);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.theme-swatch:hover { transform: scale(1.12); }
+
+.theme-swatch.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--swatch);
+}
+
 .toast {
   position: fixed;
   bottom: 24px;
@@ -814,6 +905,13 @@ button, input, select { font: inherit; }
   margin: 0 auto;
   width: 100%;
   overflow-y: auto;
+}
+
+.monthly-view .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #0F0F0F;
 }
 
 .monthly-title {
@@ -860,7 +958,7 @@ button, input, select { font: inherit; }
 }
 
 .month-grid .day-cell:hover { background: #181818; }
-.month-grid .day-cell.today { background: #2f0505; }
+.month-grid .day-cell.today { background: var(--cal-accent-bg, #2f0505); }
 .month-grid .day-cell.out { opacity: 0.35; }
 
 .day-cell-header {
@@ -893,7 +991,7 @@ button, input, select { font: inherit; }
 }
 
 .month-grid .day-cell.today .day-num {
-  background: #dd0426;
+  background: var(--cal-accent, #dd0426);
   color: #000;
   font-weight: 700;
 }
@@ -969,18 +1067,6 @@ button, input, select { font: inherit; }
 .monthly-modal .modal-date { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
 .monthly-modal-tasks { margin-bottom: 4px; }
 
-.monthly-task-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #222;
-  font-size: 13px;
-}
-
-.monthly-task-row:last-child { border-bottom: none; }
-.monthly-task-row.done .modal-task-name { text-decoration: line-through; opacity: 0.45; }
-
 .monthly-no-tasks {
   font-size: 12px;
   color: var(--text-muted);
@@ -1016,7 +1102,7 @@ button, input, select { font: inherit; }
   color: var(--text);
 }
 
-.day-big.today { color: #dd0426; }
+.day-big.today { color: var(--cal-accent, #dd0426); }
 
 .day-meta {
   display: flex;
@@ -1043,7 +1129,7 @@ button, input, select { font: inherit; }
 
 .day-stat-value { font-size: 18px; font-weight: 700; line-height: 1; }
 .day-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.day-stat-done { color: #dd0426; }
+.day-stat-done { color: var(--cal-accent, #dd0426); }
 
 .day-stat-divider {
   width: 1px;
@@ -1120,7 +1206,7 @@ button, input, select { font: inherit; }
   left: 64px;
   right: 0;
   height: 2px;
-  background: #dd0426;
+  background: var(--cal-accent, #dd0426);
   z-index: 10;
   pointer-events: none;
 }
@@ -1133,7 +1219,7 @@ button, input, select { font: inherit; }
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #dd0426;
+  background: var(--cal-accent, #dd0426);
 }
 
 .tasks-layer {
@@ -1281,6 +1367,18 @@ button, input, select { font: inherit; }
 }
 
 .day-sidebar-time { font-size: 11px; color: var(--text-muted); }
+
+.modal-delete {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.modal-delete:hover { color: #ff4444; }
 
 .day-sidebar-empty {
   padding: 24px 18px;

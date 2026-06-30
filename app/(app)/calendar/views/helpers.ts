@@ -1,4 +1,4 @@
-export type SubjectTag = "p" | "bio" | "rc" | "math" | "gen"
+export type SubjectTag = string
 
 export type Task = {
   id: string
@@ -7,6 +7,9 @@ export type Task = {
   time: string
   start?: string
   done: boolean
+  calendarId?: string
+  calendarName?: string
+  calendarColor?: string
 }
 
 export type TasksByDate = Record<string, Task[]>
@@ -53,16 +56,27 @@ export function formatMinutes(mins: number) {
   return `${m}min`
 }
 
+const TAG_COLORS = ["#8b7cf8","#dd0426","#38bdf8","#fb923c","#f472b6","#22c55e","#06b6d4","#eab308","#a855f7","#14b8a6"]
+const TAG_LABELS: Record<string,string> = {p:"P",bio:"BIO",rc:"RC",math:"MATH",gen:"GEN"}
+
+function hashTag(tag: string) {
+  let h = 0
+  for (let i = 0; i < tag.length; i++) h = ((h << 5) - h) + tag.charCodeAt(i), h |= 0
+  return Math.abs(h)
+}
+
 export function tagLabel(tag: SubjectTag) {
-  return {p:"P",bio:"BIO",rc:"RC",math:"MATH",gen:"GEN"}[tag]
+  return TAG_LABELS[tag] || tag.slice(0, 3).toUpperCase()
 }
 
 export function tagClass(tag: SubjectTag) {
-  return {p:"tag-p",bio:"tag-bio",rc:"tag-rc",math:"tag-math",gen:"tag-gen"}[tag]
+  const known = ["p","bio","rc","math","gen"]
+  return known.includes(tag) ? `tag-${tag}` : ""
 }
 
 export function tagColor(tag: SubjectTag) {
-  return {p:"#8b7cf8",bio:"#dd0426",rc:"#38bdf8",math:"#fb923c",gen:"#f472b6"}[tag]
+  const builtin: Record<string,string> = {p:"#8b7cf8",bio:"#dd0426",rc:"#38bdf8",math:"#fb923c",gen:"#f472b6"}
+  return builtin[tag] || TAG_COLORS[hashTag(tag) % TAG_COLORS.length]
 }
 
 export function getWeekStart(date: Date) {

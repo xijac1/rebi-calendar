@@ -12,11 +12,13 @@ const HOUR_H = 72
 interface DayViewProps {
   tasks: TasksByDate
   onToggleTask: (dayKey: string, taskId: string) => void
-  onAddTask: () => void
+  onAddTask?: () => void
+  onEditTask?: (dayKey: string, task: Task) => void
   rebalanceButton?: ReactNode
+  isViewAll?: boolean
 }
 
-export default function DayView({ tasks, onToggleTask, onAddTask, rebalanceButton }: DayViewProps) {
+export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, rebalanceButton, isViewAll }: DayViewProps) {
   const today = useMemo(() => new Date(), [])
   const [viewDate, setViewDate] = useState(today)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -120,10 +122,12 @@ export default function DayView({ tasks, onToggleTask, onAddTask, rebalanceButto
           </div>
         </div>
         <div className="topbar-right">
-          <button className="btn" onClick={onAddTask} type="button">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            Add Task
-          </button>
+          {onAddTask && (
+            <button className="btn" onClick={onAddTask} type="button">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Add Task
+            </button>
+          )}
         </div>
       </div>
 
@@ -151,8 +155,9 @@ export default function DayView({ tasks, onToggleTask, onAddTask, rebalanceButto
 
                 return (
                   <div
-                    className={`task-block${task.done ? " done" : ""}`}
+                    className={`task-block${task.done?" done":""}`}
                     key={task.id}
+                    onClick={()=>onEditTask?.(key,task)}
                     style={{
                       top: `${top}px`,
                       height: `${height}px`,
@@ -186,14 +191,15 @@ export default function DayView({ tasks, onToggleTask, onAddTask, rebalanceButto
               </div>
             )}
             {sorted.map(task => (
-              <div className={`day-sidebar-task${task.done ? " done" : ""}`} key={task.id}>
-                <button className="sidebar-check" onClick={() => onToggleTask(key, task.id)} type="button">
+              <div className={`day-sidebar-task${task.done ? " done" : ""}`} key={task.id} onClick={()=>onEditTask?.(key,task)}>
+                <button className="sidebar-check" onClick={e=>{e.stopPropagation();onToggleTask(key, task.id)}} type="button">
                   {task.done && <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>}
                 </button>
                 <div className="day-sidebar-task-info">
                   <div className="day-sidebar-task-name">{task.name}</div>
                   <div className="day-sidebar-task-foot">
                     <span className="day-sidebar-tag" style={{ background: `${tagColor(task.tag)}22`, color: tagColor(task.tag) }}>{tagLabel(task.tag)}</span>
+                    {isViewAll && task.calendarName && <span className="sidebar-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
                     <span className="day-sidebar-time">{task.start || "09:00"} · {task.time}</span>
                   </div>
                 </div>

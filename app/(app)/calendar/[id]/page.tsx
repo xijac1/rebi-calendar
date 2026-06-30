@@ -9,6 +9,7 @@ export type TaskRow = {
   duration_minutes: number | null
   scheduled_date: string | null
   completed: boolean
+  calendar_id?: string | null
 }
 
 export type DayOffRow = {
@@ -21,6 +22,7 @@ export type CalendarRow = {
   description: string | null
   start_date: string | null
   due_date: string | null
+  color_theme: string | null
 }
 
 export default async function CalendarPage({
@@ -33,7 +35,7 @@ export default async function CalendarPage({
 
   const { data: calendar } = await supabase
     .from("calendars")
-    .select("id, name, description, start_date, due_date")
+    .select("id, name, description, start_date, due_date, color_theme")
     .eq("id", id)
     .single()
 
@@ -41,7 +43,7 @@ export default async function CalendarPage({
 
   const { data: tasks } = await supabase
     .from("tasks")
-    .select("id, title, subject, duration_minutes, scheduled_date, completed")
+    .select("id, title, subject, duration_minutes, scheduled_date, completed, calendar_id")
     .eq("calendar_id", id)
     .order("scheduled_date", { ascending: true })
 

@@ -23,7 +23,7 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
         <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
       </svg>
     )},
-    { label: "Projects", href: "#", icon: (
+    { label: "View All", href: "/calendar/all", icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 12l9-9 9 9"/><path d="M9 21V9h6v12"/>
       </svg>

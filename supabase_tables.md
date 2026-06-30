@@ -14,6 +14,7 @@ CREATE TABLE calendars (
   start_date DATE,
   due_date DATE,
   default_view TEXT DEFAULT 'weekly',
+  color_theme TEXT DEFAULT 'rose',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -45,6 +46,9 @@ ALTER TABLE calendars ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calendar_days_off ENABLE ROW LEVEL SECURITY;
 
+
+-- Run this if you already have a calendars table (adds color_theme column):
+-- ALTER TABLE calendars ADD COLUMN color_theme TEXT DEFAULT 'rose';
 
 That's expected — Supabase only fills auth.users automatically. Your profiles table is custom, so you need a trigger to auto-insert a row when someone signs up.
 Run this SQL in your Supabase SQL Editor:
