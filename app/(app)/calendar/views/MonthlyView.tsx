@@ -81,10 +81,9 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
     <div className="monthly-view">
       <div className="topbar">
         <div className="topbar-left">
-          <span className={`day-big${viewMonth === today.getMonth() && viewYear === today.getFullYear() ? " today" : ""}`}>{SHORT_MONTHS[viewMonth]}</span>
+          <span className={`day-big${viewMonth === today.getMonth() && viewYear === today.getFullYear() ? " today" : ""}`}>{MONTH_NAMES[viewMonth]}</span>
           <div className="day-meta">
-            <span className="day-weekday">{MONTH_NAMES[viewMonth]}</span>
-            <span className="day-month">{viewYear}</span>
+            <span className="day-weekday">{viewYear}</span>
           </div>
         </div>
         <div className="topbar-center">

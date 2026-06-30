@@ -371,10 +371,9 @@ export default function CalendarView({
           <>
           <div className="topbar">
             <div className="topbar-left">
-              <span className={`day-big${isSameDate(currentWeekStart, getWeekStart(today)) ? " today" : ""}`}>{SHORT_MONTHS[currentWeekStart.getMonth()]}</span>
+              <span className={`day-big${isSameDate(currentWeekStart, getWeekStart(today)) ? " today" : ""}`}>{MONTH_NAMES[currentWeekStart.getMonth()]}</span>
               <div className="day-meta">
-                <span className="day-weekday">{MONTH_NAMES[currentWeekStart.getMonth()]}</span>
-                <span className="day-month">{currentWeekStart.getFullYear()}</span>
+                <span className="day-weekday">{currentWeekStart.getFullYear()}</span>
               </div>
             </div>
             <div className="topbar-center">
