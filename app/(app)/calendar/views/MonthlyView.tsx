@@ -4,7 +4,7 @@ import { useState, useMemo, type ReactNode } from "react"
 import type { Task, TasksByDate, SubjectTag } from "./helpers"
 import {
   dateKey, isSameDate, formatDateLabel, tagLabel, tagColor,
-  MONTH_NAMES, SHORT_DAYS, formatMinutes, parseDurationToMinutes,
+  MONTH_NAMES, SHORT_MONTHS, SHORT_DAYS, formatMinutes, parseDurationToMinutes,
 } from "./helpers"
 
 interface MonthlyViewProps {
@@ -79,11 +79,15 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
     <div className="monthly-view">
       <div className="topbar">
         <div className="topbar-left">
-          <span className="monthly-title">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+          <span className={`day-big${viewMonth === today.getMonth() && viewYear === today.getFullYear() ? " today" : ""}`}>{SHORT_MONTHS[viewMonth]}</span>
+          <div className="day-meta">
+            <span className="day-weekday">{MONTH_NAMES[viewMonth]}</span>
+            <span className="day-month">{viewYear}</span>
+          </div>
         </div>
         <div className="topbar-center">
-          <button className="today-btn" onClick={goToday} type="button">Today</button>
           <button className="nav-btn" onClick={() => navigate(-1)} type="button">&lt;</button>
+          <button className="today-btn" onClick={goToday} type="button">Today</button>
           <button className="nav-btn" onClick={() => navigate(1)} type="button">&gt;</button>
           {rebalanceButton}
         </div>
@@ -136,7 +140,10 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
               key={cell.key}
               onClick={() => setSelectedDayKey(cell.key)}
             >
-              <span className={`day-num${isT ? " today" : ""}`}>{cell.day}</span>
+              <div className="day-cell-header">
+                {cell.day === 1 && <span className="month-label">{SHORT_MONTHS[cell.date.getMonth()]}</span>}
+                <span className={`day-num${isT ? " today" : ""}`}>{cell.day}</span>
+              </div>
               <div className="task-pills">
                 {visible.map(task => (
                   <span className={`task-pill pill-${task.tag}`} key={task.id} title={task.name}>

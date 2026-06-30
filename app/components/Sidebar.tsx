@@ -45,9 +45,9 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <svg className="logo-icon" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="13" fill="#1a2f1a" stroke="#2ea04f" strokeWidth="1.5"/>
-            <path d="M9 18 L14 9 L19 18" stroke="#2ea04f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M10.5 15.5 H17.5" stroke="#2ea04f" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="14" cy="14" r="13" fill="#2f0505" stroke="#dd0426" strokeWidth="1.5"/>
+            <path d="M9 18 L14 9 L19 18" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M10.5 15.5 H17.5" stroke="#dd0426" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           <span className="logo-wordmark">Rebi</span>
         </div>

@@ -62,7 +62,7 @@ export function tagClass(tag: SubjectTag) {
 }
 
 export function tagColor(tag: SubjectTag) {
-  return {p:"#8b7cf8",bio:"#4ade80",rc:"#38bdf8",math:"#fb923c",gen:"#f472b6"}[tag]
+  return {p:"#8b7cf8",bio:"#dd0426",rc:"#38bdf8",math:"#fb923c",gen:"#f472b6"}[tag]
 }
 
 export function getWeekStart(date: Date) {

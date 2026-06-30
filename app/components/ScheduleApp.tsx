@@ -618,15 +618,6 @@ export default function ScheduleApp() {
                   className={`day-cell${isSameDate(day, today) ? " today" : ""}`}
                   key={key}
                 >
-                  <button
-                    className="add-task-btn"
-                    onClick={() => openModal(key)}
-                    type="button"
-                    aria-label={`Add task for ${formatDateLabel(key)}`}
-                  >
-                    +
-                  </button>
-
                   {dayTasks.map((task) => (
                     <div className={`task-card${task.done ? " done" : ""}`} key={task.id}>
                       <div className="task-top">
@@ -649,6 +640,14 @@ export default function ScheduleApp() {
                     </div>
                   ))}
 
+                  <button
+                    className="add-task-btn"
+                    onClick={() => openModal(key)}
+                    type="button"
+                    aria-label={`Add task for ${formatDateLabel(key)}`}
+                  >
+                    +
+                  </button>
                   {total ? <div className="day-total">Total Time: {total}</div> : null}
                 </div>
               );

@@ -7,7 +7,8 @@ import type { TaskRow, DayOffRow, CalendarRow } from "./[id]/page"
 import type { Task, TasksByDate, SubjectTag } from "./views/helpers"
 import {
   dateKey, dateFromKey, formatDateLabel, isSameDate,
-  parseDurationToMinutes, formatMinutes, getWeekStart, MONTH_NAMES,
+  parseDurationToMinutes, formatMinutes, getWeekStart,
+  MONTH_NAMES, SHORT_MONTHS, DAYS,
   tagLabel, tagClass,
 } from "./views/helpers"
 import MonthlyView from "./views/MonthlyView"
@@ -36,9 +37,6 @@ type RebalancePlan =
       totalMinutes: number
       maxDayMinutes: number
     }
-
-const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
 function getUnfinishedTasks(tasks: TasksByDate) {
   return Object.entries(tasks).sort(([a],[b])=>a.localeCompare(b))
@@ -279,8 +277,6 @@ export default function CalendarView({
     openModal(dateKey(now))
   }
 
-  const weekLabel = `${MONTH_NAMES[currentWeekStart.getMonth()]} ${currentWeekStart.getFullYear()}`
-
   const weekStats = useMemo(() => {
     const dayKeys = days.map(d => dateKey(d))
     const all = dayKeys.flatMap(k => tasks[k] || [])
@@ -320,7 +316,11 @@ export default function CalendarView({
           <>
           <div className="topbar">
             <div className="topbar-left">
-              <span className="monthly-title">{weekLabel}</span>
+              <span className={`day-big${isSameDate(currentWeekStart, getWeekStart(today)) ? " today" : ""}`}>{SHORT_MONTHS[currentWeekStart.getMonth()]}</span>
+              <div className="day-meta">
+                <span className="day-weekday">{MONTH_NAMES[currentWeekStart.getMonth()]}</span>
+                <span className="day-month">{currentWeekStart.getFullYear()}</span>
+              </div>
             </div>
             <div className="topbar-center">
               <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
@@ -376,7 +376,6 @@ export default function CalendarView({
               {days.map(day=>{
                 const k=dateKey(day), dayTasks=tasks[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
                 return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
-                  <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>
                   {dayTasks.map(task=>
                     <div className={`task-card${task.done?" done":""}`} key={task.id}>
                       <div className="task-top">
@@ -391,6 +390,7 @@ export default function CalendarView({
                       </div>
                     </div>
                   )}
+                  <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>
                   {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
                 </div>
               })}

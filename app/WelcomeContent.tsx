@@ -53,7 +53,7 @@ export default function WelcomePage({
   }
 
   const pwScore = signupPassword.length === 0 ? 0 : Math.max(1, scorePassword(signupPassword))
-  const pwColors = ["#c0392b", "#e67e22", "#f1c40f", "#2ea04f"]
+  const pwColors = ["#c0392b", "#e67e22", "#f1c40f", "#dd0426"]
   const pwLabels = ["Weak", "Fair", "Good", "Strong"]
 
   async function handleLogin() {
@@ -95,9 +95,9 @@ export default function WelcomePage({
       <nav className="welcome-nav">
         <a className="nav-logo" href="#">
           <svg className="nav-logo-icon" viewBox="0 0 30 30" fill="none">
-            <circle cx="15" cy="15" r="14" fill="#1a2f1a" stroke="#2ea04f" strokeWidth="1.4"/>
-            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#2ea04f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M11.5 17.5 H18.5" stroke="#2ea04f" strokeWidth="1.6" strokeLinecap="round"/>
+            <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
+            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
           </svg>
           <span className="nav-logo-name">Rebi<span>Calendar</span></span>
         </a>
@@ -184,7 +184,7 @@ export default function WelcomePage({
             <div className="demo-sidebar">
               <div className="demo-cal-list-title">My Calendars</div>
               <div className="demo-cal-item active">
-                <div className="cal-dot" style={{ background: "#2ea04f" }}></div>
+                <div className="cal-dot" style={{ background: "#dd0426" }}></div>
                 Q2 Product Launch
               </div>
               <div className="demo-cal-item">
@@ -267,7 +267,7 @@ export default function WelcomePage({
               </div>
               <div className="demo-legend" style={{ display: "flex", gap: "16px", marginTop: "14px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
                 <div className="legend-item">
-                  <div className="legend-swatch" style={{ background: "#2ea04f" }}></div> Completed
+                  <div className="legend-swatch" style={{ background: "#dd0426" }}></div> Completed
                 </div>
                 <div className="legend-item">
                   <div className="legend-swatch" style={{ background: "#c0392b" }}></div> Missed
@@ -385,9 +385,9 @@ export default function WelcomePage({
       <footer className="welcome-footer">
         <a className="footer-logo" href="#">
           <svg width="22" height="22" viewBox="0 0 30 30" fill="none">
-            <circle cx="15" cy="15" r="14" fill="#1a2f1a" stroke="#2ea04f" strokeWidth="1.4"/>
-            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#2ea04f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M11.5 17.5 H18.5" stroke="#2ea04f" strokeWidth="1.6" strokeLinecap="round"/>
+            <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
+            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
           </svg>
           <span>Rebi<em>Calendar</em></span>
         </a>
@@ -406,9 +406,9 @@ export default function WelcomePage({
             <button className="auth-close" onClick={() => setShowLogin(false)}>&times;</button>
             <div className="auth-logo">
               <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <circle cx="15" cy="15" r="14" fill="#1a2f1a" stroke="#2ea04f" strokeWidth="1.4"/>
-                <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#2ea04f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                <path d="M11.5 17.5 H18.5" stroke="#2ea04f" strokeWidth="1.6" strokeLinecap="round"/>
+                <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
+                <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
               </svg>
               <span className="auth-logo-text">Rebi<span>Calendar</span></span>
             </div>
@@ -474,9 +474,9 @@ export default function WelcomePage({
             <button className="auth-close" onClick={() => setShowSignup(false)}>&times;</button>
             <div className="auth-logo">
               <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <circle cx="15" cy="15" r="14" fill="#1a2f1a" stroke="#2ea04f" strokeWidth="1.4"/>
-                <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#2ea04f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                <path d="M11.5 17.5 H18.5" stroke="#2ea04f" strokeWidth="1.6" strokeLinecap="round"/>
+                <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
+                <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
               </svg>
               <span className="auth-logo-text">Rebi<span>Calendar</span></span>
             </div>

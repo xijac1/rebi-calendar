@@ -21,3 +21,6 @@ Implementation Overview – Phase 1: Add Supabase Auth
 
 2. Add a simple navigation bar to the layout (app/layout.tsx) with login/logout links based on session state.
 All changes compile, and the app now requires Supabase authentication before accessing any schedule functionality. Further steps (calendar CRUD, storing tasks) will build on this authenticated foundation.
+
+
+no time just checklist
