@@ -1519,7 +1519,7 @@ button, input, select { font: inherit; }
   align-items: center;
   padding: 0;
   transition: width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1);
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   z-index: 10;
 }
@@ -1631,6 +1631,7 @@ button, input, select { font: inherit; }
 .sidebar-bottom {
   width: 100%;
   padding: 8px 10px;
+  position: relative;
 }
 
 .profile-btn {
@@ -1672,6 +1673,60 @@ button, input, select { font: inherit; }
 }
 
 .sidebar.expanded .profile-name { opacity: 1; transition-delay: 0.07s; }
+
+.sidebar-user-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.sidebar-user-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: calc(100% + 12px);
+  z-index: 201;
+  background: #161616;
+  border: 1px solid #252525;
+  border-radius: 14px;
+  padding: 8px;
+  min-width: 220px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.sidebar-user-profile .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8e8e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-email {
+  font-size: 12px;
+  color: #888;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Main content */
 .dashboard-main {

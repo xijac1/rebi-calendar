@@ -4,12 +4,13 @@ import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter, usePathname } from "next/navigation"
 
-export default function Sidebar({ userEmail }: { userEmail: string }) {
+export default function Sidebar({ userEmail, userName }: { userEmail: string; userName: string }) {
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
-  const initial = userEmail.charAt(0).toUpperCase()
+  const initial = userName.charAt(0).toUpperCase()
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -77,10 +78,29 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
         })}
       </div>
       <div className="sidebar-bottom">
-        <div className="profile-btn" onClick={handleSignOut} title="Sign out">
+        <div className="profile-btn" onClick={() => setShowUserMenu(!showUserMenu)} title="Profile">
           <div className="avatar">{initial}</div>
-          <span className="profile-name">{userEmail}</span>
+          <span className="profile-name">{userName}</span>
         </div>
+        {showUserMenu && (
+          <>
+            <div className="sidebar-user-overlay" onClick={() => setShowUserMenu(false)} />
+            <div className="sidebar-user-menu">
+              <div className="sidebar-user-profile">
+                <div className="avatar">{initial}</div>
+                <div className="sidebar-user-info">
+                  <div className="sidebar-user-name">{userName}</div>
+                  <div className="sidebar-user-email">{userEmail}</div>
+                </div>
+              </div>
+              <div className="user-menu-divider" />
+              <button className="user-menu-item user-menu-signout" onClick={() => { setShowUserMenu(false); handleSignOut() }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign out
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </nav>
   )
