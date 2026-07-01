@@ -295,7 +295,7 @@ export default function WelcomePage({
               </svg>
             </div>
             <div className="step-title">Create a calendar</div>
-            <div className="step-desc">Give it a name, a start date, and a due date. Add your tasks or milestones — daily, weekly, or custom.</div>
+            <div className="step-desc">Give it a name, a start date, and an end date. Add your tasks or milestones — daily, weekly, or custom.</div>
           </div>
           <div className="step-card">
             <div className="step-num">STEP 2</div>
@@ -315,7 +315,7 @@ export default function WelcomePage({
               </svg>
             </div>
             <div className="step-title">Hit Rebalance</div>
-            <div className="step-desc">One click spreads everything you missed evenly across the days remaining before your due date. Your plan is fresh again.</div>
+            <div className="step-desc">One click spreads everything you missed evenly across the days remaining before your end date. Your plan is fresh again.</div>
           </div>
         </div>
       </section>
@@ -331,7 +331,7 @@ export default function WelcomePage({
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             </div>
             <div className="feature-title">Multiple calendars</div>
-            <div className="feature-desc">Run a study plan, a fitness goal, and a work project side by side — each with its own timeline and due date.</div>
+            <div className="feature-desc">Run a study plan, a fitness goal, and a work project side by side — each with its own timeline and end date.</div>
           </div>
           <div className="feature-card">
             <div className="feature-icon">
@@ -351,7 +351,7 @@ export default function WelcomePage({
             <div className="feature-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
             </div>
-            <div className="feature-title">Start &amp; due dates</div>
+            <div className="feature-title">Start &amp; end dates</div>
             <div className="feature-desc">Every calendar has a fixed window. Rebi always knows how many days are left to work with when rebalancing.</div>
           </div>
           <div className="feature-card">

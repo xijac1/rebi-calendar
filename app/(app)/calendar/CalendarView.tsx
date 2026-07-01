@@ -131,7 +131,7 @@ export default function CalendarView({
   const [taskStart, setTaskStart] = useState("09:00")
   const [dayOffInput, setDayOffInput] = useState("")
   const [rebalanceOpen, setRebalanceOpen] = useState(false)
-  const [rebalanceStartDate, setRebalanceStartDate] = useState(calendar.start_date || dateKey(new Date()))
+  const [rebalanceStartDate, setRebalanceStartDate] = useState(dateKey(new Date()))
   const [rebalanceExamDate, setRebalanceExamDate] = useState(calendar.due_date || dateKey(new Date()))
   const [selectedRebalanceView, setSelectedRebalanceView] = useState<RebalanceView>("detailed")
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -163,20 +163,6 @@ export default function CalendarView({
     if (!rebalanceStartDate||!rebalanceExamDate||dateFromKey(rebalanceStartDate)>dateFromKey(rebalanceExamDate)) return null
     return buildBalancedPlan(tasks,rebalanceStartDate,rebalanceExamDate,daysOff)
   },[daysOff,rebalanceExamDate,rebalanceStartDate,tasks])
-
-  const previewText = useMemo(() => {
-    if (!rebalanceStartDate||!rebalanceExamDate||dateFromKey(rebalanceStartDate)>dateFromKey(rebalanceExamDate))
-      return "Choose a valid start and exam date to preview your balanced workload."
-    if (!rebalancePlan) return "Select dates to preview your balanced workload."
-    if ("error" in rebalancePlan) return rebalancePlan.error
-    if (!rebalancePlan.unfinished.length) return "All tasks are complete. There is nothing to rebalance."
-    const avg = Math.ceil(rebalancePlan.totalMinutes/rebalancePlan.studyDays.length)
-    return `After rebalancing, ${rebalancePlan.unfinished.length} unfinished tasks will be spread across ${rebalancePlan.studyDays.length} study days at about ${formatMinutes(avg)} per day. Heaviest day: ${formatMinutes(rebalancePlan.maxDayMinutes)}.`
-  },[rebalanceExamDate,rebalancePlan,rebalanceStartDate])
-
-  const previewTasks = rebalancePlan&&!("error"in rebalancePlan)
-    ? rebalancePlan.dayLoads.filter(d=>d.tasks.length).slice(0,4)
-    : []
 
   function showToast(msg: string) { setToast(msg) }
 
@@ -231,7 +217,7 @@ export default function CalendarView({
   }
 
   function openRebalanceModal() {
-    setRebalanceStartDate(calendar.start_date || dateKey(new Date()))
+    setRebalanceStartDate(dateKey(new Date()))
     setRebalanceExamDate(calendar.due_date || dateKey(new Date()))
     setRebalanceOpen(true)
   }
@@ -242,7 +228,7 @@ export default function CalendarView({
     }
     const plan = buildBalancedPlan(tasks, rebalanceStartDate, rebalanceExamDate, daysOff)
     if ("error" in plan) { showToast(plan.error); return }
-    if (!plan.unfinished.length) { showToast("No unfinished tasks to rebalance"); return }
+    if (!plan.unfinished.length) { showToast("No unfinished tasks to rebalance"); setTimeout(()=>setRebalanceOpen(false), 2200); return }
 
     const updates: { id: string; scheduled_date: string }[] = []
     plan.dayLoads.forEach(day => {
@@ -412,7 +398,7 @@ export default function CalendarView({
                     </div>
                     <div className="day-stat-divider" />
                     <div className="day-stat">
-                      <span className="day-stat-label">Study Time</span>
+                      <span className="day-stat-label">Total Time</span>
                       <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
                     </div>
                     <div className="day-stat-divider" />
@@ -535,7 +521,7 @@ export default function CalendarView({
       <div className={`modal-overlay rebalance-overlay${rebalanceOpen?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setRebalanceOpen(false)}}>
         <div className="rebalance-modal">
           <div className="rebalance-header">
-            <h3>Rebalance Study Schedule</h3>
+            <h3>Rebalance Schedule</h3>
             <button className="icon-close" onClick={()=>setRebalanceOpen(false)} type="button">&times;</button>
           </div>
           <div className="rebalance-body">
@@ -544,7 +530,7 @@ export default function CalendarView({
                 <h4>Select Dates</h4>
                 <label>Start Date</label>
                 <input type="date" value={rebalanceStartDate} onChange={e=>setRebalanceStartDate(e.target.value)}/>
-                <label>Exam Date</label>
+                <label>End Date</label>
                 <input type="date" value={rebalanceExamDate} onChange={e=>setRebalanceExamDate(e.target.value)}/>
                 <label>Select Days Off</label>
                 <div className="date-add-row">
@@ -575,20 +561,6 @@ export default function CalendarView({
               <button className="btn-primary rebalance-submit" onClick={applyRebalance} type="button" disabled={loading}>
                 {loading ? "Rebalancing..." : "Rebalance Study Schedule"}
               </button>
-            </div>
-            <div className="rebalance-preview">
-              <div className="preview-board">
-                {previewTasks.map(day=>
-                  <div className="preview-task" key={day.key}>
-                    <strong>{day.tasks[0].name}</strong>
-                    <span>{formatDateLabel(day.key)} - {formatMinutes(day.minutes)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="preview-copy">
-                <h4>Schedule Preview</h4>
-                <p>{previewText}</p>
-              </div>
             </div>
           </div>
         </div>
@@ -650,6 +622,7 @@ export default function CalendarView({
           </div>
         </div>
         <div className="settings-row">
+          <label>Tasks</label>
           <button className="btn" onClick={() => { setSettingsOpen(false); handleAddTask() }} type="button">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             Add Tasks

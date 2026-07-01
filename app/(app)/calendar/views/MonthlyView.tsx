@@ -109,7 +109,7 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
               </div>
               <div className="day-stat-divider" />
               <div className="day-stat">
-                <span className="day-stat-label">Study Time</span>
+                <span className="day-stat-label">Total Time</span>
                 <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
               </div>
               <div className="day-stat-divider" />

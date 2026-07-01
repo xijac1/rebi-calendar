@@ -128,7 +128,7 @@ export default function DashboardContent({
                 <div className="cal-info">
                   <div className="cal-name">{cal.name}</div>
                   <div className="cal-meta">
-                    {cal.due_date ? `Due ${formatDate(cal.due_date)}` : "No due date"}
+                    {cal.due_date ? `End ${formatDate(cal.due_date)}` : "No end date"}
                     {hl ? <span> · {hl}</span> : null}
                   </div>
                 </div>
@@ -168,7 +168,7 @@ export default function DashboardContent({
                 <input type="date" value={newStart} onChange={(e) => setNewStart(e.target.value)} />
               </div>
               <div className="auth-field">
-                <label>Due date</label>
+                <label>End date</label>
                 <input type="date" value={newDue} onChange={(e) => setNewDue(e.target.value)} />
               </div>
             </div>

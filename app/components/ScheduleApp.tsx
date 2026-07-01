@@ -353,29 +353,6 @@ export default function ScheduleApp() {
     return buildBalancedPlan(tasks, rebalanceStartDate, rebalanceExamDate, daysOff);
   }, [daysOff, rebalanceExamDate, rebalanceStartDate, tasks]);
 
-  const previewText = useMemo(() => {
-    if (
-      !rebalanceStartDate ||
-      !rebalanceExamDate ||
-      dateFromKey(rebalanceStartDate) > dateFromKey(rebalanceExamDate)
-    ) {
-      return "Choose a valid start and exam date to preview your balanced workload.";
-    }
-    if (!rebalancePlan) return "Select dates to preview your balanced workload.";
-    if ("error" in rebalancePlan) return rebalancePlan.error;
-    if (!rebalancePlan.unfinished.length) {
-      return "All tasks are complete. There is nothing to rebalance.";
-    }
-
-    const avg = Math.ceil(rebalancePlan.totalMinutes / rebalancePlan.studyDays.length);
-    return `After rebalancing, ${rebalancePlan.unfinished.length} unfinished tasks will be spread across ${rebalancePlan.studyDays.length} study days at about ${formatMinutes(avg)} per day. Heaviest day: ${formatMinutes(rebalancePlan.maxDayMinutes)}.`;
-  }, [rebalanceExamDate, rebalancePlan, rebalanceStartDate]);
-
-  const previewTasks =
-    rebalancePlan && !("error" in rebalancePlan)
-      ? rebalancePlan.dayLoads.filter((day) => day.tasks.length).slice(0, 4)
-      : [];
-
   function showToast(message: string) {
     setToast(message);
   }
@@ -436,6 +413,7 @@ export default function ScheduleApp() {
     }
     if (!plan.unfinished.length) {
       showToast("No unfinished tasks to rebalance");
+      setTimeout(() => setRebalanceOpen(false), 2200);
       return;
     }
 
@@ -664,7 +642,7 @@ export default function ScheduleApp() {
       >
         <div className="rebalance-modal">
           <div className="rebalance-header">
-            <h3>Rebalance Study Schedule</h3>
+            <h3>Rebalance Schedule</h3>
             <button
               className="icon-close"
               onClick={() => setRebalanceOpen(false)}
@@ -685,7 +663,7 @@ export default function ScheduleApp() {
                   value={rebalanceStartDate}
                   onChange={(event) => setRebalanceStartDate(event.target.value)}
                 />
-                <label htmlFor="rebalance-exam-date">Exam Date</label>
+                <label htmlFor="rebalance-exam-date">End Date</label>
                 <input
                   id="rebalance-exam-date"
                   type="date"
@@ -749,22 +727,6 @@ export default function ScheduleApp() {
               >
                 Rebalance Study Schedule
               </button>
-            </div>
-            <div className="rebalance-preview">
-              <div className="preview-board">
-                {previewTasks.map((day) => (
-                  <div className="preview-task" key={day.key}>
-                    <strong>{day.tasks[0].name}</strong>
-                    <span>
-                      {formatDateLabel(day.key)} - {formatMinutes(day.minutes)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="preview-copy">
-                <h4>Schedule Preview</h4>
-                <p>{previewText}</p>
-              </div>
             </div>
           </div>
         </div>

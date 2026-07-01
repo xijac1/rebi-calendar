@@ -60,7 +60,13 @@ button, input, select { font: inherit; }
   border: 1px solid var(--border);
   /* border-radius: var(--radius); */
   background: var(--surface);
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
+
+.cal-body .calendar-outer::-webkit-scrollbar { width: 6px; }
+.cal-body .calendar-outer::-webkit-scrollbar-track { background: transparent; }
+.cal-body .calendar-outer::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
 
 .cal-body .calendar-grid {
   width: 100%;
@@ -551,11 +557,13 @@ button, input, select { font: inherit; }
 }
 
 .rebalance-modal {
-  width: min(1120px, 94vw);
-  max-height: 88vh;
+  width: min(520px, 94vw);
+  max-height: 80vh;
   background: rgba(18,18,18,0.96);
   border: 1px solid var(--border);
   border-radius: 14px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   box-shadow: 0 24px 80px rgba(0,0,0,0.46);
 }
@@ -585,14 +593,12 @@ button, input, select { font: inherit; }
 .icon-close:hover { color: var(--text); }
 
 .rebalance-body {
-  display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
-  min-height: 480px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .rebalance-form {
-  padding: 24px;
-  border-right: 1px solid var(--border);
+  padding: 24px 24px 32px;
 }
 
 .rebalance-section + .rebalance-section {
@@ -740,77 +746,7 @@ button, input, select { font: inherit; }
   font-size: 14px;
 }
 
-.rebalance-preview {
-  position: relative;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-direction: column;
-  overflow: hidden;
-}
 
-.rebalance-preview::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(rgba(18,18,18,0.72), rgba(18,18,18,0.9)),
-    repeating-linear-gradient(90deg, transparent 0 115px, rgba(255,255,255,0.05) 116px 117px),
-    repeating-linear-gradient(0deg, transparent 0 88px, rgba(255,255,255,0.04) 89px 90px);
-}
-
-.preview-board {
-  position: absolute;
-  inset: 24px;
-  opacity: 0.7;
-  transform: rotate(-7deg) scale(1.05);
-}
-
-.preview-task {
-  position: absolute;
-  width: 180px;
-  min-height: 58px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: #202020;
-  box-shadow: 0 18px 36px rgba(0,0,0,0.28);
-  color: var(--text-dim);
-  font-size: 12px;
-}
-
-.preview-task:nth-child(1) { top: 40px; left: 40px; }
-.preview-task:nth-child(2) { top: 96px; right: 48px; }
-.preview-task:nth-child(3) { top: 230px; left: 150px; transform: rotate(3deg); opacity: 1; }
-.preview-task:nth-child(4) { bottom: 74px; right: 78px; }
-
-.preview-task strong {
-  display: block;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.35;
-  margin-bottom: 7px;
-}
-
-.preview-copy {
-  position: relative;
-  max-width: 380px;
-  margin-bottom: 48px;
-  text-align: center;
-}
-
-.preview-copy h4 {
-  margin-bottom: 12px;
-  font-size: 17px;
-  font-weight: 650;
-}
-
-.preview-copy p {
-  color: var(--text-dim);
-  font-size: 15px;
-  line-height: 1.5;
-}
 
 .settings-panel {
   display: none;
@@ -941,7 +877,13 @@ button, input, select { font: inherit; }
   margin: 0 auto;
   width: 100%;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
+
+.monthly-view::-webkit-scrollbar { width: 6px; }
+.monthly-view::-webkit-scrollbar-track { background: transparent; }
+.monthly-view::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
 
 .view-wrapper {
   flex: 1;
@@ -951,7 +893,13 @@ button, input, select { font: inherit; }
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
+
+.view-wrapper::-webkit-scrollbar { width: 6px; }
+.view-wrapper::-webkit-scrollbar-track { background: transparent; }
+.view-wrapper::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
 
 .monthly-view .topbar,
 .day-view .topbar,
@@ -1544,7 +1492,13 @@ button, input, select { font: inherit; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
+
+.app-main::-webkit-scrollbar { width: 6px; }
+.app-main::-webkit-scrollbar-track { background: transparent; }
+.app-main::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
 
 /* ── Dashboard ── */
 
@@ -2940,17 +2894,9 @@ button, input, select { font: inherit; }
 
   .rebalance-modal {
     max-height: 92vh;
-    overflow-y: auto;
   }
 
-  .rebalance-body { grid-template-columns: 1fr; }
 
-  .rebalance-form {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .rebalance-preview { min-height: 300px; }
 
   .view-card-grid { grid-template-columns: 1fr; }
 
