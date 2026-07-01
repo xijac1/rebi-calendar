@@ -6,7 +6,7 @@ export default async function AllCalendarsPage() {
 
   const { data: calendars } = await supabase
     .from("calendars")
-    .select("id, name, description, start_date, due_date, color_theme")
+    .select("id, name, description, start_date, due_date, color_theme, progress_mode")
 
   const ids = (calendars ?? []).map(c => c.id)
 
@@ -20,7 +20,7 @@ export default async function AllCalendarsPage() {
 
   return (
     <CalendarView
-      calendar={{ id: "all", name: "View All", description: null, start_date: null, due_date: null, color_theme: null }}
+      calendar={{ id: "all", name: "View All", description: null, start_date: null, due_date: null, color_theme: null, progress_mode: null }}
       initialTasks={(tasks ?? []).map(t => ({
         id: t.id,
         title: t.title,

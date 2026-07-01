@@ -70,3 +70,5 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+
+  ALTER TABLE calendars ADD COLUMN IF NOT EXISTS progress_mode text NOT NULL DEFAULT 'show_all';

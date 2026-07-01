@@ -138,6 +138,7 @@ export default function CalendarView({
   const [toast, setToast] = useState("")
 
   const isViewAll = calendar.id === "all"
+  const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(calendar.progress_mode as "current_view" | "show_all" || "show_all")
   const [colorTheme, setColorTheme] = useState(calendar.color_theme || "rose")
   const theme = THEMES[colorTheme] || THEMES.rose
   const themeVars = {
@@ -342,6 +343,15 @@ export default function CalendarView({
     return { total, done, totalMins, pct }
   }, [days, tasks])
 
+  const allTasksStats = useMemo(() => {
+    const all = Object.values(tasks).flat()
+    const total = all.length
+    const done = all.filter(t => t.done).length
+    const totalMins = all.reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
+    const pct = total ? Math.round((done / total) * 100) : 0
+    return { total, done, totalMins, pct }
+  }, [tasks])
+
   const rebalanceButton = (
     <button className="btn rebalance-btn" onClick={openRebalanceModal} type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
@@ -368,94 +378,91 @@ export default function CalendarView({
 
       <div className="cal-body">
         {viewMode === "weekly" && (
-          <>
-          <div className="topbar">
-            <div className="topbar-left">
-              <span className={`day-big${isSameDate(currentWeekStart, getWeekStart(today)) ? " today" : ""}`}>{MONTH_NAMES[currentWeekStart.getMonth()]}</span>
-              <div className="day-meta">
-                <span className="day-weekday">{currentWeekStart.getFullYear()}</span>
-              </div>
-            </div>
-            <div className="topbar-center">
-              <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
-              <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
-              <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
-              {!isViewAll && (
-                <button className="btn" onClick={openRebalanceModal} type="button">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-                  Rebalance
-                </button>
-              )}
-            </div>
-            <div className="day-stats">
-              <div className="day-stat">
-                <span className="day-stat-label">Total</span>
-                <span className="day-stat-value">{weekStats.total}</span>
-              </div>
-              <div className="day-stat-divider" />
-              <div className="day-stat">
-                <span className="day-stat-label">Done</span>
-                <span className="day-stat-value day-stat-done">{weekStats.done}</span>
-              </div>
-              <div className="day-stat-divider" />
-              <div className="day-stat">
-                <span className="day-stat-label">Study Time</span>
-                <span className="day-stat-value">{weekStats.totalMins ? formatMinutes(weekStats.totalMins) : "—"}</span>
-              </div>
-              <div className="day-stat-divider" />
-              <div className="day-stat">
-                <span className="day-stat-label">Progress</span>
-                <div className="day-stat-progress-row">
-                  <div className="progress-track"><div className="progress-fill" style={{ width: `${weekStats.pct}%` }} /></div>
-                  <span className="day-stat-pct">{weekStats.pct}%</span>
+          <div className="view-wrapper">
+            <div className="topbar">
+              <div className="topbar-left">
+                <span className={`day-big${isSameDate(currentWeekStart, getWeekStart(today)) ? " today" : ""}`}>{MONTH_NAMES[currentWeekStart.getMonth()]}</span>
+                <div className="day-meta">
+                  <span className="day-weekday">{currentWeekStart.getFullYear()}</span>
                 </div>
               </div>
-            </div>
-            <div className="topbar-right">
-              {!isViewAll && (
-                <button className="btn" onClick={handleAddTask} type="button">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                  Add Task
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="calendar-outer">
-            <div className="calendar-grid">
-              <div className="col-spacer"/>
-              {days.map(day=>{
-                const k=dateKey(day)
-                return <div className={`col-header${isSameDate(day,today)?" today":""}`} key={k}>
-                  <div className="col-date">{SHORT_MONTHS[day.getMonth()]} {day.getDate()}</div>
-                  <div className="col-day">{DAYS[day.getDay()]}</div>
-                </div>
-              })}
-              <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
-              {days.map(day=>{
-                const k=dateKey(day), dayTasks=tasks[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
-                return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
-                  {dayTasks.map(task=>
-                    <div className={`task-card${task.done?" done":""}`} key={task.id} onClick={()=>handleEditTask(k,task)}>
-                      <div className="task-top">
-                        <button className="task-check" onClick={()=>toggleTask(k,task.id)} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
-                          <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
-                        </button>
-                        <div className="task-name">{task.name}</div>
-                        {isViewAll && task.calendarName && <span className="task-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
-                      </div>
-                      <div className="task-footer">
-                        <span className="task-tag">{tagLabel(task.tag)}</span>
-                        <span className="task-time">{task.time}</span>
+              <div className="topbar-center">
+                <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
+                <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
+                <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
+                {!isViewAll && (
+                  <button className="btn" onClick={openRebalanceModal} type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                    Rebalance
+                  </button>
+                )}
+              </div>
+              <div className="day-stats">
+                {(() => {
+                  const s = progressMode === "show_all" ? allTasksStats : weekStats
+                  return <>
+                    <div className="day-stat">
+                      <span className="day-stat-label">Total</span>
+                      <span className="day-stat-value">{s.total}</span>
+                    </div>
+                    <div className="day-stat-divider" />
+                    <div className="day-stat">
+                      <span className="day-stat-label">Done</span>
+                      <span className="day-stat-value day-stat-done">{s.done}</span>
+                    </div>
+                    <div className="day-stat-divider" />
+                    <div className="day-stat">
+                      <span className="day-stat-label">Study Time</span>
+                      <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
+                    </div>
+                    <div className="day-stat-divider" />
+                    <div className="day-stat">
+                      <span className="day-stat-label">Progress</span>
+                      <div className="day-stat-progress-row">
+                        <div className="progress-track"><div className="progress-fill" style={{ width: `${s.pct}%` }} /></div>
+                        <span className="day-stat-pct">{s.pct}%</span>
                       </div>
                     </div>
-                  )}
-                  {!isViewAll && <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>}
-                  {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
-                </div>
-              })}
+                  </>
+                })()}
+              </div>
+            </div>
+            <div className="calendar-outer">
+              <div className="calendar-grid">
+                <div className="col-spacer"/>
+                {days.map(day=>{
+                  const k=dateKey(day)
+                  return <div className={`col-header${isSameDate(day,today)?" today":""}`} key={k}>
+                    <div className="col-date">{SHORT_MONTHS[day.getMonth()]} {day.getDate()}</div>
+                    <div className="col-day">{DAYS[day.getDay()]}</div>
+                  </div>
+                })}
+                <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
+                {days.map(day=>{
+                  const k=dateKey(day), dayTasks=tasks[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
+                  return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
+                    {dayTasks.map(task=>
+                      <div className={`task-card${task.done?" done":""}`} key={task.id} onClick={()=>handleEditTask(k,task)}>
+                        <div className="task-top">
+                          <button className="task-check" onClick={()=>toggleTask(k,task.id)} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
+                            <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+                          </button>
+                          <div className="task-name">{task.name}</div>
+                          {isViewAll && task.calendarName && <span className="task-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
+                        </div>
+                        <div className="task-footer">
+                          <span className="task-tag">{tagLabel(task.tag)}</span>
+                          <span className="task-time">{task.time}</span>
+                        </div>
+                      </div>
+                    )}
+                    {!isViewAll && <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>}
+                    {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
+                  </div>
+                })}
+              </div>
             </div>
           </div>
-          </>
         )}
         {viewMode === "monthly" && (
           <MonthlyView
@@ -466,6 +473,8 @@ export default function CalendarView({
             onEditTask={handleEditTask}
             rebalanceButton={isViewAll ? undefined : rebalanceButton}
             isViewAll={isViewAll}
+            progressMode={progressMode}
+            allTasksStats={allTasksStats}
           />
         )}
         {viewMode === "daily" && (
@@ -476,6 +485,8 @@ export default function CalendarView({
             onEditTask={handleEditTask}
             rebalanceButton={isViewAll ? undefined : rebalanceButton}
             isViewAll={isViewAll}
+            progressMode={progressMode}
+            allTasksStats={allTasksStats}
           />
         )}
       </div>
@@ -606,6 +617,43 @@ export default function CalendarView({
               />
             ))}
           </div>
+        </div>
+        <div className="settings-row">
+          <label>Progress Bar</label>
+          <div className="toggle-group">
+            <button
+              className={`toggle-btn${progressMode === "show_all" ? " active" : ""}`}
+              onClick={async () => {
+                setProgressMode("show_all")
+                if (!isViewAll) {
+                  await supabase.from("calendars").update({ progress_mode: "show_all" }).eq("id", calendar.id)
+                }
+                showToast("Showing progress for all tasks")
+              }}
+              type="button"
+            >
+              Show All
+            </button>
+            <button
+              className={`toggle-btn${progressMode === "current_view" ? " active" : ""}`}
+              onClick={async () => {
+                setProgressMode("current_view")
+                if (!isViewAll) {
+                  await supabase.from("calendars").update({ progress_mode: "current_view" }).eq("id", calendar.id)
+                }
+                showToast("Showing progress for current view only")
+              }}
+              type="button"
+            >
+              Current View
+            </button>
+          </div>
+        </div>
+        <div className="settings-row">
+          <button className="btn" onClick={() => { setSettingsOpen(false); handleAddTask() }} type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            Add Tasks
+          </button>
         </div>
       </aside>
 

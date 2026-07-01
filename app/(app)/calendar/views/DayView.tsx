@@ -16,9 +16,11 @@ interface DayViewProps {
   onEditTask?: (dayKey: string, task: Task) => void
   rebalanceButton?: ReactNode
   isViewAll?: boolean
+  progressMode?: "current_view" | "show_all"
+  allTasksStats?: { total: number; done: number; totalMins: number; pct: number }
 }
 
-export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, rebalanceButton, isViewAll }: DayViewProps) {
+export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, rebalanceButton, isViewAll, progressMode, allTasksStats }: DayViewProps) {
   const today = useMemo(() => new Date(), [])
   const [viewDate, setViewDate] = useState(today)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -98,36 +100,33 @@ export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, re
           {rebalanceButton}
         </div>
         <div className="day-stats">
-          <div className="day-stat">
-            <span className="day-stat-label">Total</span>
-            <span className="day-stat-value">{stats.total}</span>
-          </div>
-          <div className="day-stat-divider" />
-          <div className="day-stat">
-            <span className="day-stat-label">Done</span>
-            <span className="day-stat-value day-stat-done">{stats.done}</span>
-          </div>
-          <div className="day-stat-divider" />
-          <div className="day-stat">
-            <span className="day-stat-label">Study Time</span>
-            <span className="day-stat-value">{stats.totalMins ? formatMinutes(stats.totalMins) : "—"}</span>
-          </div>
-          <div className="day-stat-divider" />
-          <div className="day-stat">
-            <span className="day-stat-label">Progress</span>
-            <div className="day-stat-progress-row">
-              <div className="progress-track"><div className="progress-fill" style={{ width: `${stats.pct}%` }} /></div>
-              <span className="day-stat-pct">{stats.pct}%</span>
-            </div>
-          </div>
-        </div>
-        <div className="topbar-right">
-          {onAddTask && (
-            <button className="btn" onClick={onAddTask} type="button">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              Add Task
-            </button>
-          )}
+          {(() => {
+            const s = progressMode === "show_all" && allTasksStats ? allTasksStats : stats
+            return <>
+              <div className="day-stat">
+                <span className="day-stat-label">Total</span>
+                <span className="day-stat-value">{s.total}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Done</span>
+                <span className="day-stat-value day-stat-done">{s.done}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Study Time</span>
+                <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Progress</span>
+                <div className="day-stat-progress-row">
+                  <div className="progress-track"><div className="progress-fill" style={{ width: `${s.pct}%` }} /></div>
+                  <span className="day-stat-pct">{s.pct}%</span>
+                </div>
+              </div>
+            </>
+          })()}
         </div>
       </div>
 

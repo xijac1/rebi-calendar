@@ -15,9 +15,11 @@ interface MonthlyViewProps {
   onEditTask?: (dayKey: string, task: Task) => void
   rebalanceButton?: ReactNode
   isViewAll?: boolean
+  progressMode?: "current_view" | "show_all"
+  allTasksStats?: { total: number; done: number; totalMins: number; pct: number }
 }
 
-export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTask, onEditTask, rebalanceButton, isViewAll }: MonthlyViewProps) {
+export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTask, onEditTask, rebalanceButton, isViewAll, progressMode, allTasksStats }: MonthlyViewProps) {
   const today = useMemo(() => new Date(), [])
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -93,36 +95,33 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
           {rebalanceButton}
         </div>
         <div className="day-stats">
-          <div className="day-stat">
-            <span className="day-stat-label">Total</span>
-            <span className="day-stat-value">{monthStats.total}</span>
-          </div>
-          <div className="day-stat-divider" />
-          <div className="day-stat">
-            <span className="day-stat-label">Done</span>
-            <span className="day-stat-value day-stat-done">{monthStats.done}</span>
-          </div>
-          <div className="day-stat-divider" />
-          <div className="day-stat">
-            <span className="day-stat-label">Study Time</span>
-            <span className="day-stat-value">{monthStats.totalMins ? formatMinutes(monthStats.totalMins) : "—"}</span>
-          </div>
-          <div className="day-stat-divider" />
-          <div className="day-stat">
-            <span className="day-stat-label">Progress</span>
-            <div className="day-stat-progress-row">
-              <div className="progress-track"><div className="progress-fill" style={{ width: `${monthStats.pct}%` }} /></div>
-              <span className="day-stat-pct">{monthStats.pct}%</span>
-            </div>
-          </div>
-        </div>
-        <div className="topbar-right">
-          {onAddTask && (
-            <button className="btn" onClick={onAddTask} type="button">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              Add Task
-            </button>
-          )}
+          {(() => {
+            const s = progressMode === "show_all" && allTasksStats ? allTasksStats : monthStats
+            return <>
+              <div className="day-stat">
+                <span className="day-stat-label">Total</span>
+                <span className="day-stat-value">{s.total}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Done</span>
+                <span className="day-stat-value day-stat-done">{s.done}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Study Time</span>
+                <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
+              </div>
+              <div className="day-stat-divider" />
+              <div className="day-stat">
+                <span className="day-stat-label">Progress</span>
+                <div className="day-stat-progress-row">
+                  <div className="progress-track"><div className="progress-fill" style={{ width: `${s.pct}%` }} /></div>
+                  <span className="day-stat-pct">{s.pct}%</span>
+                </div>
+              </div>
+            </>
+          })()}
         </div>
       </div>
 
@@ -149,7 +148,7 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
               </div>
               <div className="task-pills">
                 {visible.map(task => (
-                  <span className={`task-pill pill-${task.tag}`} key={task.id} title={task.name} onClick={e => { e.stopPropagation(); onEditTask?.(cell.key, task) }}>
+                  <span className={`task-pill pill-${task.tag}`} key={task.id} title={task.name}>
                     <span className="pill-dot" style={{ background: tagColor(task.tag) }} />
                     <span className="pill-name">{task.name}</span>
                     {isViewAll && task.calendarName && <span className="pill-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}

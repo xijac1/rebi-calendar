@@ -23,6 +23,7 @@ export type CalendarRow = {
   start_date: string | null
   due_date: string | null
   color_theme: string | null
+  progress_mode: string | null
 }
 
 export default async function CalendarPage({
@@ -35,7 +36,7 @@ export default async function CalendarPage({
 
   const { data: calendar } = await supabase
     .from("calendars")
-    .select("id, name, description, start_date, due_date, color_theme")
+    .select("id, name, description, start_date, due_date, color_theme, progress_mode")
     .eq("id", id)
     .single()
 
