@@ -625,7 +625,7 @@ export default function CalendarView({
           <label>Tasks</label>
           <button className="btn" onClick={() => { setSettingsOpen(false); handleAddTask() }} type="button">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            Add Tasks
+            Add Bulk
           </button>
         </div>
       </aside>
