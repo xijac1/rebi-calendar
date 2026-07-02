@@ -165,7 +165,7 @@ export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, re
                       color: tagColor(task.tag),
                     }}
                   >
-                    <button className="task-block-check" onClick={() => onToggleTask(key, task.id)} type="button">
+                    <button className="task-block-check" onClick={e => { e.stopPropagation(); onToggleTask(key, task.id); }} type="button">
                       {task.done && <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>}
                     </button>
                     <div className="task-block-name">{task.name}</div>

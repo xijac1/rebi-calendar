@@ -430,7 +430,7 @@ export default function CalendarView({
                     {dayTasks.map(task=>
                       <div className={`task-card${task.done?" done":""}`} key={task.id} onClick={()=>handleEditTask(k,task)}>
                         <div className="task-top">
-                          <button className="task-check" onClick={()=>toggleTask(k,task.id)} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
+                          <button className="task-check" onClick={e=>{e.stopPropagation();toggleTask(k,task.id)}} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
                             <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
                           </button>
                           <div className="task-name">{task.name}</div>
