@@ -637,6 +637,44 @@ button, input, select { font: inherit; }
   border-color: var(--today-border);
 }
 
+.rebalance-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.rebalance-hint code {
+  background: rgba(255,255,255,0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.bulk-textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: #262626;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+.bulk-textarea:focus {
+  outline: none;
+  border-color: var(--today-border);
+}
+
+.bulk-preview {
+  margin-top: 8px;
+  min-height: 20px;
+}
+.bulk-preview-count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .date-add-row {
   display: grid;
   grid-template-columns: 1fr auto;

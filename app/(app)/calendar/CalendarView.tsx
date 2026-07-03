@@ -136,6 +136,10 @@ export default function CalendarView({
   const [selectedRebalanceView, setSelectedRebalanceView] = useState<RebalanceView>("detailed")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState("")
+  const [bulkAddOpen, setBulkAddOpen] = useState(false)
+  const [bulkInput, setBulkInput] = useState("")
+  const [bulkStartDate, setBulkStartDate] = useState(dateKey(new Date()))
+  const [bulkEndDate, setBulkEndDate] = useState(calendar.due_date || dateKey(new Date()))
 
   const isViewAll = calendar.id === "all"
   const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(calendar.progress_mode as "current_view" | "show_all" || "show_all")
@@ -310,6 +314,29 @@ export default function CalendarView({
     })
   }
 
+  async function applyBulkAdd() {
+    const items = parseBulkInput(bulkInput)
+    if (!items.length) { showToast("No valid items. Use format: Name, Duration, Tag (one per line)"); return }
+    const plan = distributeBulkItems(items, bulkStartDate, bulkEndDate, daysOff)
+    if (!plan) { showToast("No available study days in the date range"); return }
+    setLoading(true)
+    const inserts: { calendar_id: string; title: string; subject: string | null; duration_minutes: number; scheduled_date: string }[] = []
+    plan.forEach(day => day.items.forEach(item => inserts.push({ calendar_id: calendar.id, title: item.name, subject: item.tag || null, duration_minutes: item.minutes, scheduled_date: day.key })))
+    const { data, error } = await supabase.from("tasks").insert(inserts).select("id, title, subject, duration_minutes, scheduled_date, completed")
+    if (error) { showToast("Error adding tasks"); setLoading(false); return }
+    setTasks(prev => {
+      const next = { ...prev }
+      data?.forEach(t => {
+        const k = t.scheduled_date || "unscheduled"
+        if (!next[k]) next[k] = []
+        next[k].push({ id: t.id, name: t.title, tag: (t.subject as SubjectTag) || "", time: formatMinutes(t.duration_minutes), done: t.completed })
+      })
+      return next
+    })
+    setLoading(false); setBulkAddOpen(false); setBulkInput("")
+    showToast(`Added ${items.length} tasks`)
+  }
+
   function handleAddTask() {
     const now = new Date()
     openModal(dateKey(now))
@@ -317,6 +344,29 @@ export default function CalendarView({
 
   function handleEditTask(dayKey: string, task: Task) {
     openEditModal(dayKey, task)
+  }
+
+  function parseBulkInput(text: string): { name: string; tag: SubjectTag; minutes: number }[] {
+    return text.split("\n").map(l => l.trim()).filter(l => l).map(l => {
+      const parts = l.split(/[,|]/).map(s => s.trim())
+      return { name: parts[0] || "", tag: (parts[2] || "") as SubjectTag, minutes: parseDurationToMinutes(parts[1] || "") }
+    }).filter((i): i is { name: string; tag: SubjectTag; minutes: number } => !!i.name && !!i.minutes)
+  }
+
+  function distributeBulkItems(items: { name: string; tag: SubjectTag; minutes: number }[], startKey: string, endKey: string, daysOff: Set<string>) {
+    const start = dateFromKey(startKey), end = dateFromKey(endKey)
+    const studyDays: string[] = []
+    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const k = dateKey(d)
+      if (!daysOff.has(k)) studyDays.push(k)
+    }
+    if (!studyDays.length) return null
+    const dayLoads: { key: string; minutes: number; items: { name: string; tag: SubjectTag; minutes: number }[] }[] = studyDays.map(k => ({ key: k, minutes: 0, items: [] }))
+    ;[...items].sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name)).forEach(item => {
+      dayLoads.sort((a, b) => a.minutes - b.minutes || a.key.localeCompare(b.key))
+      dayLoads[0].items.push(item); dayLoads[0].minutes += item.minutes
+    })
+    return dayLoads.filter(d => d.items.length > 0).sort((a, b) => a.key.localeCompare(b.key))
   }
 
   const weekStats = useMemo(() => {
@@ -623,12 +673,47 @@ export default function CalendarView({
         </div>
         <div className="settings-row">
           <label>Tasks</label>
-          <button className="btn" onClick={() => { setSettingsOpen(false); handleAddTask() }} type="button">
+          <button className="btn" onClick={() => { setSettingsOpen(false); setBulkStartDate(dateKey(new Date())); setBulkEndDate(calendar.due_date || dateKey(new Date())); setBulkInput(""); setBulkAddOpen(true) }} type="button">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             Add Bulk
           </button>
         </div>
       </aside>
+
+      {/* Bulk add modal */}
+      <div className={`modal-overlay${bulkAddOpen?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setBulkAddOpen(false)}}>
+        <div className="rebalance-modal">
+          <div className="rebalance-header">
+            <h3>Add Tasks in Bulk</h3>
+            <button className="icon-close" onClick={()=>setBulkAddOpen(false)} type="button">&times;</button>
+          </div>
+          <div className="rebalance-body">
+            <div className="rebalance-form">
+              <section className="rebalance-section">
+                <h4>Tasks</h4>
+                <p className="rebalance-hint">One per line. Format: <code>Name, Duration, Tag</code></p>
+                <textarea className="bulk-textarea" rows={8} value={bulkInput} onChange={e=>setBulkInput(e.target.value)} placeholder={`Kinematics Qbank, 45min, physics\nPhotosynthesis Videos, 1h, bio\nRC Passage, 20min, rc`} />
+                <div className="bulk-preview">
+                  {(() => {
+                    const parsed = parseBulkInput(bulkInput)
+                    return parsed.length ? <span className="bulk-preview-count">{parsed.length} task{parsed.length!==1?"s":""} parsed</span> : null
+                  })()}
+                </div>
+              </section>
+              <section className="rebalance-section">
+                <h4>Date Range</h4>
+                <label>Start Date</label>
+                <input type="date" value={bulkStartDate} onChange={e=>setBulkStartDate(e.target.value)} />
+                <label>End Date</label>
+                <input type="date" value={bulkEndDate} onChange={e=>setBulkEndDate(e.target.value)} />
+              </section>
+              <button className="btn-primary rebalance-submit" onClick={applyBulkAdd} type="button" disabled={loading}>
+                {loading ? "Adding..." : "Add Tasks"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className={`toast${toast?" show":""}`}>{toast}</div>
     </div>

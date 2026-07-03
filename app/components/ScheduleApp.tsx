@@ -63,43 +63,6 @@ type RebalancePlan =
       maxDayMinutes: number;
     };
 
-const initialTasks: TasksByDate = {
-  "2026-06-27": [
-    {
-      id: 1,
-      name: "Energy & Momentum Videos (5.1-5.4)",
-      tag: "p",
-      time: "1h",
-      done: false,
-    },
-    {
-      id: 2,
-      name: "Energy & Momentum Qbank",
-      tag: "p",
-      time: "25min",
-      done: false,
-    },
-    { id: 3, name: "Bio Bits", tag: "bio", time: "30min", done: false },
-    {
-      id: 4,
-      name: "Extra Reading Comprehension #1",
-      tag: "rc",
-      time: "20min",
-      done: false,
-    },
-    {
-      id: 5,
-      name: "Photosynthesis Videos (6.1-6.4)",
-      tag: "bio",
-      time: "1h",
-      done: false,
-    },
-  ],
-  "2026-06-23": [
-    { id: 6, name: "Kinematics Qbank", tag: "p", time: "45min", done: true },
-  ],
-};
-
 function getWeekStart(date: Date) {
   const day = new Date(date);
   const dow = day.getDay();
@@ -296,7 +259,7 @@ function CheckIcon() {
 }
 
 export default function ScheduleApp() {
-  const [tasks, setTasks] = useState<TasksByDate>(initialTasks);
+  const [tasks, setTasks] = useState<TasksByDate>({});
   const [currentWeekStart, setCurrentWeekStart] = useState(() => getWeekStart(new Date()));
   const [addingToDay, setAddingToDay] = useState<string | null>(null);
   const [taskName, setTaskName] = useState("");
