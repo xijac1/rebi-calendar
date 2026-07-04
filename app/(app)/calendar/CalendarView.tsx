@@ -724,6 +724,11 @@ export default function CalendarView({
             Add Bulk
           </button>
         </div>
+        <div className="settings-section-title">APIs</div>
+        <div className="settings-row">
+          <label>API Keys</label>
+          <button className="btn" type="button">ADD KEY</button>
+        </div>
       </aside>
 
       {/* Bulk add modal */}
@@ -751,6 +756,7 @@ export default function CalendarView({
                     </div>
                   ))}
                   <button className="add-task-btn" onClick={() => { setShowBulkForm(true); setBulkFormName(""); setBulkFormTag(""); setBulkFormTime("") }} type="button">+</button>
+                  <button className="add-task-btn" onClick={() => { setShowBulkForm(true); setBulkFormName(""); setBulkFormTag(""); setBulkFormTime("") }} type="button">AI</button>
                 </div>
                 {showBulkForm && (
                   <div className="bulk-inline-form">

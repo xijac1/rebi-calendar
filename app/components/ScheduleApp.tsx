@@ -796,6 +796,11 @@ export default function ScheduleApp() {
             </div>
           )}
         </div>
+        <div className="settings-section-title">APIs</div>
+        <div className="settings-row">
+          <label>API Keys</label>
+          <button className="btn" type="button">ADD KEY</button>
+        </div>
         <div className="settings-actions">
           <button
             className="btn-primary settings-save"
