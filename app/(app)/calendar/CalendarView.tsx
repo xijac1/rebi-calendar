@@ -69,9 +69,42 @@ function buildBalancedPlan(tasks: TasksByDate, startKey: string, examKey: string
   if (!studyDays.length) return {error:"No study days are available between the selected dates."}
   if (invalid.length) return {error:"Every unfinished task needs a valid duration before rebalancing."}
   const dayLoads: DayLoad[] = studyDays.map(k=>({key:k,minutes:0,tasks:[]}))
-  ;[...unfinished].map(t=>({...t,minutes:t.minutes as number}))
+
+  const ordered = unfinished.filter(t => t.order != null).map(t => ({...t, minutes: t.minutes as number})).sort((a, b) => (a.order as number) - (b.order as number))
+  const unordered = unfinished.filter(t => t.order == null).map(t => ({...t, minutes: t.minutes as number}))
+
+  if (ordered.length > 0) {
+    const totalMinutes = ordered.reduce((s, t) => s + t.minutes, 0)
+    let cumMinutes = 0
+    let dayIdx = 0
+    ordered.forEach(task => {
+      const taskStartCum = cumMinutes
+      cumMinutes += task.minutes
+      while (dayIdx < dayLoads.length - 1 && taskStartCum >= totalMinutes * (dayIdx + 1) / dayLoads.length) {
+        dayIdx++
+      }
+      dayLoads[dayIdx].tasks.push(task)
+      dayLoads[dayIdx].minutes += task.minutes
+    })
+  }
+
+  for (let i = 0; i < dayLoads.length - 1; i++) {
+    if (dayLoads[i].tasks.length === 0) {
+      let next = i + 1
+      while (next < dayLoads.length && dayLoads[next].tasks.length === 0) next++
+      if (next < dayLoads.length) {
+        const task = dayLoads[next].tasks.shift()!
+        dayLoads[next].minutes -= task.minutes
+        dayLoads[i].tasks.push(task)
+        dayLoads[i].minutes += task.minutes
+      }
+    }
+  }
+
+  ;[...unordered]
     .sort((a,b)=>b.minutes-a.minutes||a.originalDate.localeCompare(b.originalDate))
     .forEach(task=>{ dayLoads.sort((a,b)=>a.minutes-b.minutes||a.key.localeCompare(b.key)); dayLoads[0].tasks.push(task); dayLoads[0].minutes+=task.minutes })
+
   dayLoads.sort((a,b)=>a.key.localeCompare(b.key))
   const totalMinutes = unfinished.reduce((s,t)=>s+(t.minutes||0),0)
   const maxDayMinutes = Math.max(0,...dayLoads.map(d=>d.minutes))
@@ -116,6 +149,7 @@ export default function CalendarView({
         calendarId: t.calendar_id || undefined,
         calendarName: cal?.name,
         calendarColor: calTheme?.accent,
+        order: t.order ?? undefined,
       })
     })
     return grouped
@@ -140,13 +174,21 @@ export default function CalendarView({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState("")
   const [bulkAddOpen, setBulkAddOpen] = useState(false)
-  const [bulkPool, setBulkPool] = useState<{ name: string; tag: SubjectTag; minutes: number }[]>([])
+  const [bulkPool, setBulkPool] = useState<{ name: string; tag: SubjectTag; minutes: number; description?: string; order?: number }[]>([])
   const [showBulkForm, setShowBulkForm] = useState(false)
   const [bulkFormName, setBulkFormName] = useState("")
   const [bulkFormTag, setBulkFormTag] = useState<SubjectTag>("")
   const [bulkFormTime, setBulkFormTime] = useState("")
   const [bulkStartDate, setBulkStartDate] = useState(dateKey(new Date()))
   const [bulkEndDate, setBulkEndDate] = useState(calendar.due_date || dateKey(new Date()))
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [aiInputText, setAiInputText] = useState("")
+  const [aiInstructions, setAiInstructions] = useState("")
+  const [aiModel, setAiModel] = useState("llama-3.3-70b-versatile")
+  const [aiLoading, setAiLoading] = useState(false)
+  const [apiKeyModal, setApiKeyModal] = useState(false)
+  const [apiKeyInput, setApiKeyInput] = useState("")
+  const [hasApiKey, setHasApiKey] = useState(false)
 
   const isViewAll = calendar.id === "all"
   const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(
@@ -196,6 +238,10 @@ export default function CalendarView({
       progress_mode: update.progress_mode ?? existing?.progress_mode ?? "show_all",
     }, { onConflict: "user_id" })
   }
+
+  useEffect(() => {
+    setHasApiKey(!!localStorage.getItem("groq_api_key"))
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -353,7 +399,9 @@ export default function CalendarView({
           calendar_id: calendar.id, title: item.name,
           subject: item.tag || null, duration_minutes: item.minutes,
           scheduled_date: day.key, completed: false,
-        }).select("id, title, subject, duration_minutes, scheduled_date, completed").single()
+          description: item.description || null,
+          "order": item.order ?? null,
+        }).select("id, title, subject, duration_minutes, scheduled_date, completed, \"order\"").single()
       )
     ))
     const errors = results.filter(r => r.error)
@@ -367,7 +415,7 @@ export default function CalendarView({
         const t = r.data
         const k = t.scheduled_date || "unscheduled"
         if (!next[k]) next[k] = []
-        next[k].push({ id: t.id, name: t.title, tag: (t.subject as SubjectTag) || "", time: formatMinutes(t.duration_minutes), done: t.completed })
+        next[k].push({ id: t.id, name: t.title, tag: (t.subject as SubjectTag) || "", time: formatMinutes(t.duration_minutes), done: t.completed, order: t.order ?? undefined })
       })
       return next
     })
@@ -384,7 +432,91 @@ export default function CalendarView({
     openEditModal(dayKey, task)
   }
 
-  function distributeBulkItems(items: { name: string; tag: SubjectTag; minutes: number }[], startKey: string, endKey: string, daysOff: Set<string>) {
+  async function generateTasksWithAI() {
+    const apiKey = localStorage.getItem("groq_api_key")
+    if (!apiKey) { showToast("Set your API key in Settings first"); return }
+
+    const text = aiInputText.trim()
+    if (!text) { showToast("Enter some text or goal to generate tasks from"); return }
+
+    setAiLoading(true)
+    const prompt = `You are an expert task breakdown assistant.
+
+Content / Goal:
+${text.substring(0, 15000)}
+
+${aiInstructions.trim() ? `Additional Instructions: ${aiInstructions.trim()}` : ""}
+
+Break this into clear actionable tasks.
+Assign each task a logical sequential order number starting from 1.
+
+Return ONLY a valid JSON object with a "tasks" array with this structure:
+{
+  "tasks": [
+    {
+      "order": number,
+      "name": "Clean task title without number",
+      "type": "Category or type of this task",
+      "description": "Short description",
+      "estimated_minutes": number
+    }
+  ]
+}`
+
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
+          max_tokens: 4000,
+          response_format: { type: "json_object" },
+        }),
+      })
+
+      if (!res.ok) {
+        if (res.status === 429) showToast("Rate limit hit. Please wait a moment.")
+        else showToast("API Error: " + res.status)
+        setAiLoading(false)
+        return
+      }
+
+      const data = await res.json()
+      const raw = data.choices[0].message.content
+      const parsed = JSON.parse(raw)
+      const tasks = parsed.tasks || parsed
+
+      if (Array.isArray(tasks) && tasks.length > 0) {
+        tasks.forEach((t: { name: string; type?: string; estimated_minutes?: number; description?: string; order?: number }) => {
+          if (t.name) {
+            setBulkPool(p => [...p, {
+              name: t.name.trim(),
+              tag: (t.type || "") as SubjectTag,
+              minutes: t.estimated_minutes || 60,
+              description: t.description || "",
+              order: t.order ?? undefined,
+            }])
+          }
+        })
+        showToast(`Generated ${tasks.length} tasks`)
+        setAiInputText("")
+        setAiInstructions("")
+        setAiPanelOpen(false)
+      } else {
+        showToast("No tasks returned")
+      }
+    } catch (e: unknown) {
+      showToast("Request failed: " + (e instanceof Error ? e.message : String(e)))
+    }
+    setAiLoading(false)
+  }
+
+  function distributeBulkItems(items: { name: string; tag: SubjectTag; minutes: number; description?: string; order?: number }[], startKey: string, endKey: string, daysOff: Set<string>) {
     const start = dateFromKey(startKey), end = dateFromKey(endKey)
     const studyDays: string[] = []
     for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -392,7 +524,7 @@ export default function CalendarView({
       if (!daysOff.has(k)) studyDays.push(k)
     }
     if (!studyDays.length) return null
-    const dayLoads: { key: string; minutes: number; items: { name: string; tag: SubjectTag; minutes: number }[] }[] = studyDays.map(k => ({ key: k, minutes: 0, items: [] }))
+    const dayLoads: { key: string; minutes: number; items: { name: string; tag: SubjectTag; minutes: number; description?: string; order?: number }[] }[] = studyDays.map(k => ({ key: k, minutes: 0, items: [] }))
     ;[...items].sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name)).forEach(item => {
       dayLoads.sort((a, b) => a.minutes - b.minutes || a.key.localeCompare(b.key))
       dayLoads[0].items.push(item); dayLoads[0].minutes += item.minutes
@@ -727,9 +859,24 @@ export default function CalendarView({
         <div className="settings-section-title">APIs</div>
         <div className="settings-row">
           <label>API Keys</label>
-          <button className="btn" type="button">ADD KEY</button>
+          <button className="btn" onClick={() => { setApiKeyInput(localStorage.getItem("groq_api_key") || ""); setApiKeyModal(true) }} type="button">
+            {hasApiKey ? "UPDATE KEY" : "ADD KEY"}
+          </button>
         </div>
       </aside>
+
+      {/* API Key modal */}
+      <div className={`modal-overlay${apiKeyModal?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setApiKeyModal(false)}}>
+        <div className="modal">
+          <h3>Groq API Key</h3>
+          <label>Enter your Groq API key</label>
+          <input type="password" value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} placeholder="gsk_..." />
+          <div className="modal-actions">
+            <button className="btn-cancel" onClick={()=>setApiKeyModal(false)} type="button">Cancel</button>
+            <button className="btn-primary" onClick={()=>{localStorage.setItem("groq_api_key", apiKeyInput.trim());setHasApiKey(true);setApiKeyModal(false);showToast("API key saved")}} type="button">Save</button>
+          </div>
+        </div>
+      </div>
 
       {/* Bulk add modal */}
       <div className={`modal-overlay${bulkAddOpen?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setBulkAddOpen(false)}}>
@@ -755,9 +902,50 @@ export default function CalendarView({
                       </div>
                     </div>
                   ))}
-                  <button className="add-task-btn" onClick={() => { setShowBulkForm(true); setBulkFormName(""); setBulkFormTag(""); setBulkFormTime("") }} type="button">+</button>
-                  <button className="add-task-btn" onClick={() => { setShowBulkForm(true); setBulkFormName(""); setBulkFormTag(""); setBulkFormTime("") }} type="button">AI</button>
+                  <button className="add-task-btn" onClick={() => { setShowBulkForm(true); setAiPanelOpen(false); setBulkFormName(""); setBulkFormTag(""); setBulkFormTime("") }} type="button">+</button>
+                  <button className="add-task-btn" onClick={() => { setAiPanelOpen(true); setShowBulkForm(false) }} type="button">AI</button>
                 </div>
+                {aiPanelOpen && (
+                  <div className="bulk-inline-form">
+                    <label>Input Text / Goal</label>
+                    <textarea
+                      className="ai-textarea"
+                      rows={6}
+                      value={aiInputText}
+                      onChange={e => setAiInputText(e.target.value)}
+                      placeholder="Paste your content, book summary, project description, or goal here..."
+                    />
+                    <label>Upload File (.md, .txt)</label>
+                    <input
+                      type="file"
+                      accept=".md,.txt"
+                      onChange={async e => {
+                        const file = e.target.files?.[0]
+                        if (file) setAiInputText(await file.text())
+                      }}
+                    />
+                    <label>Additional Instructions (optional)</label>
+                    <textarea
+                      className="ai-textarea"
+                      rows={3}
+                      value={aiInstructions}
+                      onChange={e => setAiInstructions(e.target.value)}
+                      placeholder="E.g.: Order tasks from easiest to hardest, group by phase, etc."
+                    />
+                    <label>Model</label>
+                    <select className="ai-select" value={aiModel} onChange={e => setAiModel(e.target.value)}>
+                      <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Recommended)</option>
+                      <option value="qwen/qwen3-32b">qwen/qwen3-32b (Faster)</option>
+                      <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                    </select>
+                    <div className="bulk-form-actions">
+                      <button className="btn-cancel" onClick={() => setAiPanelOpen(false)} type="button">Cancel</button>
+                      <button className="btn-primary" onClick={generateTasksWithAI} type="button" disabled={aiLoading}>
+                        {aiLoading ? "Generating..." : "Generate"}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {showBulkForm && (
                   <div className="bulk-inline-form">
                     <input type="text" value={bulkFormName} onChange={e => setBulkFormName(e.target.value)} placeholder="Task name" />

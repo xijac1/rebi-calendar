@@ -10,6 +10,7 @@ export type TaskRow = {
   scheduled_date: string | null
   completed: boolean
   calendar_id?: string | null
+  order?: number | null
 }
 
 export type DayOffRow = {
@@ -44,7 +45,7 @@ export default async function CalendarPage({
 
   const { data: tasks } = await supabase
     .from("tasks")
-    .select("id, title, subject, duration_minutes, scheduled_date, completed, calendar_id")
+    .select("id, title, subject, duration_minutes, scheduled_date, completed, calendar_id, \"order\"")
     .eq("calendar_id", id)
     .order("scheduled_date", { ascending: true })
 

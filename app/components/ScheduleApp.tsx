@@ -275,6 +275,9 @@ export default function ScheduleApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cardStyleOpen, setCardStyleOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const [apiKeyModal, setApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const days = useMemo(
@@ -320,6 +323,10 @@ export default function ScheduleApp() {
   function showToast(message: string) {
     setToast(message);
   }
+
+  useEffect(() => {
+    setHasApiKey(!!localStorage.getItem("groq_api_key"));
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -799,7 +806,9 @@ export default function ScheduleApp() {
         <div className="settings-section-title">APIs</div>
         <div className="settings-row">
           <label>API Keys</label>
-          <button className="btn" type="button">ADD KEY</button>
+          <button className="btn" onClick={() => { setApiKeyInput(localStorage.getItem("groq_api_key") || ""); setApiKeyModal(true) }} type="button">
+            {hasApiKey ? "UPDATE KEY" : "ADD KEY"}
+          </button>
         </div>
         <div className="settings-actions">
           <button
@@ -814,6 +823,19 @@ export default function ScheduleApp() {
           </button>
         </div>
       </aside>
+
+      {/* API Key modal */}
+      <div className={`modal-overlay${apiKeyModal ? " open" : ""}`} onClick={e => { if (e.target === e.currentTarget) setApiKeyModal(false) }}>
+        <div className="modal">
+          <h3>Groq API Key</h3>
+          <label>Enter your Groq API key</label>
+          <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)} placeholder="gsk_..." />
+          <div className="modal-actions">
+            <button className="btn-cancel" onClick={() => setApiKeyModal(false)} type="button">Cancel</button>
+            <button className="btn-primary" onClick={() => { localStorage.setItem("groq_api_key", apiKeyInput.trim()); setHasApiKey(true); setApiKeyModal(false); showToast("API key saved") }} type="button">Save</button>
+          </div>
+        </div>
+      </div>
 
       <div className={`toast${toast ? " show" : ""}`}>{toast}</div>
     </main>

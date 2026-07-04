@@ -10,6 +10,8 @@ export type Task = {
   calendarId?: string
   calendarName?: string
   calendarColor?: string
+  description?: string
+  order?: number
 }
 
 export type TasksByDate = Record<string, Task[]>
