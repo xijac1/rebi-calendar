@@ -73,34 +73,41 @@ function buildBalancedPlan(tasks: TasksByDate, startKey: string, examKey: string
   const ordered = unfinished.filter(t => t.order != null).map(t => ({...t, minutes: t.minutes as number})).sort((a, b) => (a.order as number) - (b.order as number))
   const unordered = unfinished.filter(t => t.order == null).map(t => ({...t, minutes: t.minutes as number}))
 
+  // Phase 1: Assign ordered tasks using center-of-mass distribution.
+  // Each task is placed at the day closest to its midpoint in the cumulative
+  // time timeline, which naturally spreads tasks evenly across study days
+  // while preserving their sequential order.
   if (ordered.length > 0) {
     const totalMinutes = ordered.reduce((s, t) => s + t.minutes, 0)
     let cumMinutes = 0
-    let dayIdx = 0
-    ordered.forEach(task => {
-      const taskStartCum = cumMinutes
+    let prevDayIdx = 0
+    for (const task of ordered) {
+      const center = cumMinutes + task.minutes / 2
       cumMinutes += task.minutes
-      while (dayIdx < dayLoads.length - 1 && taskStartCum >= totalMinutes * (dayIdx + 1) / dayLoads.length) {
-        dayIdx++
-      }
+      const proportion = center / totalMinutes
+      let dayIdx = Math.floor(proportion * dayLoads.length)
+      dayIdx = Math.min(Math.max(dayIdx, prevDayIdx), dayLoads.length - 1)
       dayLoads[dayIdx].tasks.push(task)
       dayLoads[dayIdx].minutes += task.minutes
-    })
-  }
-
-  for (let i = 0; i < dayLoads.length - 1; i++) {
-    if (dayLoads[i].tasks.length === 0) {
-      let next = i + 1
-      while (next < dayLoads.length && dayLoads[next].tasks.length === 0) next++
-      if (next < dayLoads.length) {
-        const task = dayLoads[next].tasks.shift()!
-        dayLoads[next].minutes -= task.minutes
-        dayLoads[i].tasks.push(task)
-        dayLoads[i].minutes += task.minutes
+      prevDayIdx = dayIdx
+    }
+    // Fill completely empty days by shifting the earliest task from the next
+    // occupied day forward, preserving order.
+    for (let i = 0; i < dayLoads.length - 1; i++) {
+      if (dayLoads[i].tasks.length === 0) {
+        let next = i + 1
+        while (next < dayLoads.length && dayLoads[next].tasks.length === 0) next++
+        if (next < dayLoads.length) {
+          const task = dayLoads[next].tasks.shift()!
+          dayLoads[next].minutes -= task.minutes
+          dayLoads[i].tasks.push(task)
+          dayLoads[i].minutes += task.minutes
+        }
       }
     }
   }
 
+  // Phase 2: Assign unordered tasks greedily to the least-loaded day
   ;[...unordered]
     .sort((a,b)=>b.minutes-a.minutes||a.originalDate.localeCompare(b.originalDate))
     .forEach(task=>{ dayLoads.sort((a,b)=>a.minutes-b.minutes||a.key.localeCompare(b.key)); dayLoads[0].tasks.push(task); dayLoads[0].minutes+=task.minutes })
