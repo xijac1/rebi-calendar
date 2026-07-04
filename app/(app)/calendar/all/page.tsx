@@ -18,6 +18,11 @@ export default async function AllCalendarsPage() {
         .order("scheduled_date", { ascending: true })
     : { data: [] }
 
+  const { data: userSettings } = await supabase
+    .from("user_settings")
+    .select("card_style, color_theme, progress_mode")
+    .maybeSingle()
+
   return (
     <CalendarView
       calendar={{ id: "all", name: "View All", description: null, start_date: null, due_date: null, color_theme: null, progress_mode: null }}
@@ -32,6 +37,7 @@ export default async function AllCalendarsPage() {
       }))}
       initialDaysOff={[]}
       allCalendars={calendars ?? []}
+      initialUserSettings={userSettings}
     />
   )
 }

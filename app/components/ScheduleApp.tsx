@@ -273,6 +273,7 @@ export default function ScheduleApp() {
   const [rebalanceStartDate, setRebalanceStartDate] = useState(() => dateKey(new Date()));
   const [rebalanceExamDate, setRebalanceExamDate] = useState(DEFAULT_EXAM_DATE);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cardStyleOpen, setCardStyleOpen] = useState(false);
   const [toast, setToast] = useState("");
 
   const today = useMemo(() => new Date(), []);
@@ -332,6 +333,7 @@ export default function ScheduleApp() {
         setAddingToDay(null);
         setSettingsOpen(false);
         setRebalanceOpen(false);
+        setCardStyleOpen(false);
       }
     }
 
@@ -660,29 +662,6 @@ export default function ScheduleApp() {
                   ))}
                 </div>
               </section>
-              <section className="rebalance-section">
-                <h4>Select View</h4>
-                <div className="view-card-grid">
-                  {(["clean", "detailed", "compact"] as RebalanceView[]).map((view) => (
-                    <button
-                      className={`view-card${selectedRebalanceView === view ? " selected" : ""}`}
-                      key={view}
-                      onClick={() => setSelectedRebalanceView(view)}
-                      type="button"
-                    >
-                      <span
-                        className={`view-card-lines${
-                          view === "detailed" || view === "compact" ? ` ${view}` : ""
-                        }`}
-                      />
-                      <strong>{view.charAt(0).toUpperCase() + view.slice(1)}</strong>
-                      <span>
-                        {view === "clean" ? "Default" : view === "detailed" ? "Balanced" : "Dense"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </section>
               <button
                 className="btn-primary rebalance-submit"
                 onClick={applyRebalance}
@@ -775,6 +754,47 @@ export default function ScheduleApp() {
             <option>Daily View</option>
             <option>Monthly View</option>
           </select>
+        </div>
+        <div className="settings-section-title">Tasks</div>
+        <div className="settings-row">
+          <label>Card Style</label>
+          <button
+            className="btn"
+            onClick={() => setCardStyleOpen(!cardStyleOpen)}
+            type="button"
+            aria-expanded={cardStyleOpen}
+            aria-haspopup="true"
+          >
+            {selectedRebalanceView.charAt(0).toUpperCase() + selectedRebalanceView.slice(1)}
+          </button>
+          {cardStyleOpen && (
+            <div className="card-style-popover">
+              <h4>Select View</h4>
+              <div className="view-card-grid">
+                {(["clean", "detailed", "compact"] as RebalanceView[]).map((view) => (
+                  <button
+                    className={`view-card${selectedRebalanceView === view ? " selected" : ""}`}
+                    key={view}
+                    onClick={() => {
+                      setSelectedRebalanceView(view);
+                      setCardStyleOpen(false);
+                    }}
+                    type="button"
+                  >
+                    <span
+                      className={`view-card-lines${
+                        view === "detailed" || view === "compact" ? ` ${view}` : ""
+                      }`}
+                    />
+                    <strong>{view.charAt(0).toUpperCase() + view.slice(1)}</strong>
+                    <span>
+                      {view === "clean" ? "Default" : view === "detailed" ? "Balanced" : "Dense"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="settings-actions">
           <button

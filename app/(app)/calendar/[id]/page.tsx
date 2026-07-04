@@ -53,11 +53,17 @@ export default async function CalendarPage({
     .select("date")
     .eq("calendar_id", id)
 
+  const { data: userSettings } = await supabase
+    .from("user_settings")
+    .select("card_style")
+    .maybeSingle()
+
   return (
     <CalendarView
       calendar={calendar as CalendarRow}
       initialTasks={(tasks as TaskRow[]) ?? []}
       initialDaysOff={(daysOff as DayOffRow[]) ?? []}
+      initialUserSettings={userSettings}
     />
   )
 }

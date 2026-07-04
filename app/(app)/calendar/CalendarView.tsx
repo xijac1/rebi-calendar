@@ -83,11 +83,13 @@ export default function CalendarView({
   initialTasks,
   initialDaysOff,
   allCalendars,
+  initialUserSettings,
 }: {
   calendar: CalendarRow
   initialTasks: TaskRow[]
   initialDaysOff: DayOffRow[]
   allCalendars?: CalendarInfo[]
+  initialUserSettings?: { card_style?: string | null; color_theme?: string | null; progress_mode?: string | null } | null
 }) {
   const supabase = createClient()
   const router = useRouter()
@@ -133,7 +135,8 @@ export default function CalendarView({
   const [rebalanceOpen, setRebalanceOpen] = useState(false)
   const [rebalanceStartDate, setRebalanceStartDate] = useState(dateKey(new Date()))
   const [rebalanceExamDate, setRebalanceExamDate] = useState(calendar.due_date || dateKey(new Date()))
-  const [selectedRebalanceView, setSelectedRebalanceView] = useState<RebalanceView>("detailed")
+  const [selectedRebalanceView, setSelectedRebalanceView] = useState<RebalanceView>((initialUserSettings?.card_style as RebalanceView) || "detailed")
+  const [cardStyleOpen, setCardStyleOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState("")
   const [bulkAddOpen, setBulkAddOpen] = useState(false)
@@ -146,8 +149,12 @@ export default function CalendarView({
   const [bulkEndDate, setBulkEndDate] = useState(calendar.due_date || dateKey(new Date()))
 
   const isViewAll = calendar.id === "all"
-  const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(calendar.progress_mode as "current_view" | "show_all" || "show_all")
-  const [colorTheme, setColorTheme] = useState(calendar.color_theme || "rose")
+  const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(
+    (isViewAll ? initialUserSettings?.progress_mode : calendar.progress_mode) as "current_view" | "show_all" || "show_all"
+  )
+  const [colorTheme, setColorTheme] = useState(
+    isViewAll ? (initialUserSettings?.color_theme || "rose") : (calendar.color_theme || "rose")
+  )
   const theme = THEMES[colorTheme] || THEMES.rose
   const themeVars = {
     "--today-bg": theme.accentBg,
@@ -173,6 +180,22 @@ export default function CalendarView({
   },[daysOff,rebalanceExamDate,rebalanceStartDate,tasks])
 
   function showToast(msg: string) { setToast(msg) }
+
+  async function saveUserSettings(update: { card_style?: string; color_theme?: string; progress_mode?: string }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: existing } = await supabase
+      .from("user_settings")
+      .select("card_style, color_theme, progress_mode")
+      .eq("user_id", user.id)
+      .maybeSingle()
+    await supabase.from("user_settings").upsert({
+      user_id: user.id,
+      card_style: update.card_style ?? existing?.card_style ?? "detailed",
+      color_theme: update.color_theme ?? existing?.color_theme ?? "rose",
+      progress_mode: update.progress_mode ?? existing?.progress_mode ?? "show_all",
+    }, { onConflict: "user_id" })
+  }
 
   useEffect(() => {
     if (!toast) return
@@ -604,18 +627,6 @@ export default function CalendarView({
                   )}
                 </div>
               </section>
-              <section className="rebalance-section">
-                <h4>Select View</h4>
-                <div className="view-card-grid">
-                  {(["clean","detailed","compact"] as RebalanceView[]).map(v=>
-                    <button className={`view-card${selectedRebalanceView===v?" selected":""}`} key={v} onClick={()=>setSelectedRebalanceView(v)} type="button">
-                      <span className={`view-card-lines${v==="detailed"||v==="compact"?` ${v}`:""}`}/>
-                      <strong>{v.charAt(0).toUpperCase()+v.slice(1)}</strong>
-                      <span>{v==="clean"?"Default":v==="detailed"?"Balanced":"Dense"}</span>
-                    </button>
-                  )}
-                </div>
-              </section>
               <button className="btn-primary rebalance-submit" onClick={applyRebalance} type="button" disabled={loading}>
                 {loading ? "Rebalancing..." : "Rebalance Study Schedule"}
               </button>
@@ -637,7 +648,9 @@ export default function CalendarView({
                 style={{ "--swatch": t.accent } as React.CSSProperties}
                 onClick={async () => {
                   setColorTheme(key)
-                  if (!isViewAll) {
+                  if (isViewAll) {
+                    await saveUserSettings({ color_theme: key })
+                  } else {
                     await supabase.from("calendars").update({ color_theme: key }).eq("id", calendar.id)
                   }
                   showToast(`Theme changed to ${t.label}`)
@@ -655,7 +668,9 @@ export default function CalendarView({
               className={`toggle-btn${progressMode === "show_all" ? " active" : ""}`}
               onClick={async () => {
                 setProgressMode("show_all")
-                if (!isViewAll) {
+                if (isViewAll) {
+                  await saveUserSettings({ progress_mode: "show_all" })
+                } else {
                   await supabase.from("calendars").update({ progress_mode: "show_all" }).eq("id", calendar.id)
                 }
                 showToast("Showing progress for all tasks")
@@ -668,7 +683,9 @@ export default function CalendarView({
               className={`toggle-btn${progressMode === "current_view" ? " active" : ""}`}
               onClick={async () => {
                 setProgressMode("current_view")
-                if (!isViewAll) {
+                if (isViewAll) {
+                  await saveUserSettings({ progress_mode: "current_view" })
+                } else {
                   await supabase.from("calendars").update({ progress_mode: "current_view" }).eq("id", calendar.id)
                 }
                 showToast("Showing progress for current view only")
@@ -678,6 +695,27 @@ export default function CalendarView({
               Current View
             </button>
           </div>
+        </div>
+        <div className="settings-section-title">Tasks</div>
+        <div className="settings-row">
+          <label>Card Style</label>
+          <button className="btn" onClick={() => setCardStyleOpen(!cardStyleOpen)} type="button" aria-expanded={cardStyleOpen} aria-haspopup="true">
+            {selectedRebalanceView.charAt(0).toUpperCase() + selectedRebalanceView.slice(1)}
+          </button>
+          {cardStyleOpen && (
+            <div className="card-style-popover">
+              <h4>Select View</h4>
+              <div className="view-card-grid">
+                {(["clean","detailed","compact"] as RebalanceView[]).map(v=>
+                  <button className={`view-card${selectedRebalanceView===v?" selected":""}`} key={v} onClick={()=>{setSelectedRebalanceView(v);setCardStyleOpen(false);saveUserSettings({card_style:v})}} type="button">
+                    <span className={`view-card-lines${v==="detailed"||v==="compact"?` ${v}`:""}`}/>
+                    <strong>{v.charAt(0).toUpperCase()+v.slice(1)}</strong>
+                    <span>{v==="clean"?"Default":v==="detailed"?"Balanced":"Dense"}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         <div className="settings-row">
           <label>Tasks</label>

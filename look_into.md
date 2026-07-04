@@ -1,0 +1,1 @@
+One subtle thing: if a new user rapidly changes two settings at once, a race could occur in saveUserSettings where the second call's maybeSingle() doesn't see the first upsert yet. In practice that's near-impossible with UI clicks. Want me to guard against it anyway (e.g., use a single upsert without the read)?

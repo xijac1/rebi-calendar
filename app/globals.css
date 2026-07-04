@@ -848,7 +848,7 @@ button, input, select { font: inherit; }
   line-height: 1;
 }
 
-.settings-row { margin-bottom: 16px; }
+.settings-row { margin-bottom: 16px; position: relative; }
 
 .settings-row label {
   font-size: 12px;
@@ -898,6 +898,69 @@ button, input, select { font: inherit; }
 
 .settings-actions { margin-top: 20px; }
 .settings-save { width: 100%; }
+
+.settings-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 20px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.card-style-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 210;
+}
+
+.card-style-popover h4 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-style-popover .view-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.card-style-popover .view-card {
+  min-height: auto;
+  padding: 8px 6px;
+}
+
+.card-style-popover .view-card strong {
+  font-size: 11px;
+}
+
+.card-style-popover .view-card span:last-child {
+  font-size: 10px;
+}
+
+.card-style-popover .view-card-lines {
+  height: 36px;
+}
+
+@media (max-width: 600px) {
+  .card-style-popover .view-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .theme-grid {
   display: flex;
