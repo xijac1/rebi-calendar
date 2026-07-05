@@ -1142,7 +1142,7 @@ button, input, select { font: inherit; }
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 10px 10px 8px;
-  min-height: 120px;
+  height: 135px;
   cursor: pointer;
   transition: background 0.1s;
   display: flex;
@@ -1150,6 +1150,7 @@ button, input, select { font: inherit; }
   gap: 4px;
   position: relative;
   border-left: none;
+  overflow: hidden;
 }
 
 .month-grid .day-cell:hover { background: #181818; }

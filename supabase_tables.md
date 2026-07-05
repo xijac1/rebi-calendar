@@ -90,3 +90,26 @@ CREATE TABLE user_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 rls enabled for user_settings
+
+Step 1 — Re-sequence existing order values within each calendar:
+WITH numbered AS (
+  SELECT
+    id,
+    calendar_id,
+    "order",
+    ROW_NUMBER() OVER (
+      PARTITION BY calendar_id
+      ORDER BY "order" NULLS LAST, created_at, id
+    ) AS new_order
+  FROM tasks
+  WHERE "order" IS NOT NULL
+)
+UPDATE tasks t
+SET "order" = n.new_order
+FROM numbered n
+WHERE t.id = n.id
+  AND t."order" != n.new_order;
+Step 2 — Add a partial unique index to enforce per-calendar ordering going forward:
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_calendar_order_idx
+  ON tasks (calendar_id, "order")
+  WHERE "order" IS NOT NULL;

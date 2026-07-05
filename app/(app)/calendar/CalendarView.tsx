@@ -447,15 +447,23 @@ export default function CalendarView({
     if (!text) { showToast("Enter some text or goal to generate tasks from"); return }
 
     setAiLoading(true)
-    const prompt = `You are an expert task breakdown assistant.
-
+    const prompt = `You are an intelligent personal productivity assistant specialized in understanding user intent.
 Content / Goal:
 ${text.substring(0, 15000)}
 
 ${aiInstructions.trim() ? `Additional Instructions: ${aiInstructions.trim()}` : ""}
+Core Instruction:
+Accurately infer what the user actually wants to achieve. 
+- If they mention a book, story, or text (e.g. "the odyssey book", "atomic habits", "1984"), assume they want to READ and study it. Do NOT create tasks for buying, downloading, or acquiring the book unless explicitly asked.
+- If they mention a skill or topic, create learning + practice tasks.
+- If they mention a project, break it into execution steps.
+- Avoid literal but wrong interpretations.
 
-Break this into clear actionable tasks.
-Assign each task a logical sequential order number starting from 1.
+Task Rules:
+- Create practical, bite-sized tasks (most between 20-150 minutes).
+- Assign logical order (1, 2, 3...).
+- Automatically determine the best type/subject for each task.
+
 
 Return ONLY a valid JSON object with a "tasks" array with this structure:
 {
