@@ -590,7 +590,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
     const all = dayKeys.flatMap(k => tasks[k] || [])
     const total = all.length
     const done = all.filter(t => t.done).length
-    const totalMins = all.reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
+    const totalMins = all.filter(t => !t.done).reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
     const pct = total ? Math.round((done / total) * 100) : 0
     return { total, done, totalMins, pct }
   }, [days, tasks])
@@ -599,7 +599,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
     const all = Object.values(tasks).flat()
     const total = all.length
     const done = all.filter(t => t.done).length
-    const totalMins = all.reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
+    const totalMins = all.filter(t => !t.done).reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
     const pct = total ? Math.round((done / total) * 100) : 0
     return { total, done, totalMins, pct }
   }, [tasks])
@@ -664,7 +664,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
                     </div>
                     <div className="day-stat-divider" />
                     <div className="day-stat">
-                      <span className="day-stat-label">Total Time</span>
+                      <span className="day-stat-label">Time Left</span>
                       <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
                     </div>
                     <div className="day-stat-divider" />

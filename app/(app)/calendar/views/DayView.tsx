@@ -30,7 +30,7 @@ export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, re
   const stats = useMemo(() => {
     const total = dayTasks.length
     const done = dayTasks.filter(t => t.done).length
-    const totalMins = dayTasks.reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
+    const totalMins = dayTasks.filter(t => !t.done).reduce((s, t) => s + (parseDurationToMinutes(t.time) || 0), 0)
     const pct = total ? Math.round((done / total) * 100) : 0
     return { total, done, totalMins, pct }
   }, [dayTasks])
@@ -114,7 +114,7 @@ export default function DayView({ tasks, onToggleTask, onAddTask, onEditTask, re
               </div>
               <div className="day-stat-divider" />
               <div className="day-stat">
-                <span className="day-stat-label">Total Time</span>
+                <span className="day-stat-label">Time Left</span>
                 <span className="day-stat-value">{s.totalMins ? formatMinutes(s.totalMins) : "—"}</span>
               </div>
               <div className="day-stat-divider" />

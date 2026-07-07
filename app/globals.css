@@ -308,6 +308,7 @@ button, input, select { font: inherit; }
   border-left: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 10px 8px;
+  min-height: 320px;
   vertical-align: top;
   display: flex;
   flex-direction: column;
@@ -1142,6 +1143,7 @@ button, input, select { font: inherit; }
   border-bottom: 1px solid var(--border);
   padding: 10px 10px 8px;
   height: 135px;
+  min-height: 0;
   cursor: pointer;
   transition: background 0.1s;
   display: flex;
