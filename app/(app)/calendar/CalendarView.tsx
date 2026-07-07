@@ -175,7 +175,7 @@ export default function CalendarView({
   const [taskStart, setTaskStart] = useState("09:00")
   const [dayOffInput, setDayOffInput] = useState("")
   const [rebalanceOpen, setRebalanceOpen] = useState(false)
-  const [rebalanceStartDate, setRebalanceStartDate] = useState(dateKey(new Date()))
+  const [rebalanceStartDate, setRebalanceStartDate] = useState(calendar.start_date || dateKey(new Date()))
   const [rebalanceExamDate, setRebalanceExamDate] = useState(calendar.due_date || dateKey(new Date()))
   const [selectedRebalanceView, setSelectedRebalanceView] = useState<RebalanceView>((initialUserSettings?.card_style as RebalanceView) || "detailed")
   const [cardStyleOpen, setCardStyleOpen] = useState(false)
@@ -321,7 +321,7 @@ export default function CalendarView({
   }
 
   function openRebalanceModal() {
-    setRebalanceStartDate(dateKey(new Date()))
+    setRebalanceStartDate(calendar.start_date || dateKey(new Date()))
     setRebalanceExamDate(calendar.due_date || dateKey(new Date()))
     setRebalanceOpen(true)
   }
@@ -344,6 +344,12 @@ export default function CalendarView({
     setLoading(true)
     for (const u of updates) {
       await supabase.from("tasks").update({ scheduled_date: u.scheduled_date }).eq("id", u.id)
+    }
+    if (rebalanceStartDate !== calendar.start_date || rebalanceExamDate !== calendar.due_date) {
+      await supabase.from("calendars").update({
+        start_date: rebalanceStartDate,
+        due_date: rebalanceExamDate,
+      }).eq("id", calendar.id)
     }
     setLoading(false)
 
@@ -467,7 +473,7 @@ export default function CalendarView({
     if (!text) { showToast("Enter some text or goal to generate tasks from"); return }
 
     setAiLoading(true)
-    const prompt = `You are an intelligent personal productivity assistant specialized in understanding user intent.
+    const prompt = `You are an intelligent personal productivity assistant. Assume the user has obtained what they are describing and needs it broken down into tasks to now begin doing it.
 Content / Goal:
 ${text.substring(0, 15000)}
 

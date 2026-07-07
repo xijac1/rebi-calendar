@@ -132,7 +132,7 @@ function formatMinutes(mins: number) {
 }
 
 function tagLabel(tag: SubjectTag) {
-  return { p: "P", bio: "BIO", rc: "RC", math: "MATH" }[tag];
+  return { p: "P", bio: "BIOL", rc: "RC", math: "MATH" }[tag];
 }
 
 function tagClass(tag: SubjectTag) {

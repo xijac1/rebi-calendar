@@ -59,7 +59,7 @@ export function formatMinutes(mins: number) {
 }
 
 const TAG_COLORS = ["#8b7cf8","#dd0426","#38bdf8","#fb923c","#f472b6","#22c55e","#06b6d4","#eab308","#a855f7","#14b8a6"]
-const TAG_LABELS: Record<string,string> = {p:"P",bio:"BIO",rc:"RC",math:"MATH",gen:"GEN"}
+const TAG_LABELS: Record<string,string> = {p:"P",bio:"BIOL",rc:"RC",math:"MATH",gen:"GENE"}
 
 function hashTag(tag: string) {
   let h = 0
@@ -68,7 +68,7 @@ function hashTag(tag: string) {
 }
 
 export function tagLabel(tag: SubjectTag) {
-  return TAG_LABELS[tag] || tag.slice(0, 3).toUpperCase()
+  return TAG_LABELS[tag] || tag.slice(0, 4).toUpperCase()
 }
 
 export function tagClass(tag: SubjectTag) {

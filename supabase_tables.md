@@ -113,3 +113,5 @@ Step 2 — Add a partial unique index to enforce per-calendar ordering going for
 CREATE UNIQUE INDEX IF NOT EXISTS tasks_calendar_order_idx
   ON tasks (calendar_id, "order")
   WHERE "order" IS NOT NULL;
+
+  ALTER TABLE tasks ADD COLUMN start_time TIME;

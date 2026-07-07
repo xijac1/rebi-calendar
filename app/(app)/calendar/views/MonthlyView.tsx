@@ -149,9 +149,9 @@ export default function MonthlyView({ tasks, onToggleTask, onDeleteTask, onAddTa
               <div className="task-pills">
                 {visible.map(task => (
                   <span className={`task-pill pill-${task.tag}`} key={task.id} title={task.name}>
-                    <span className="pill-dot" style={{ background: tagColor(task.tag) }} />
-                    <span className="pill-name">{task.name}</span>
+
                     {isViewAll && task.calendarName && <span className="pill-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
+                    <span className="pill-name">{task.name}</span>
                   </span>
                 ))}
                 {more > 0 && <span className="more-count preserver">+{more} more</span>}
