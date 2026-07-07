@@ -540,10 +540,48 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
     }
     if (!studyDays.length) return null
     const dayLoads: { key: string; minutes: number; items: { name: string; tag: SubjectTag; minutes: number; description?: string; order?: number }[] }[] = studyDays.map(k => ({ key: k, minutes: 0, items: [] }))
-    ;[...items].sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name)).forEach(item => {
-      dayLoads.sort((a, b) => a.minutes - b.minutes || a.key.localeCompare(b.key))
-      dayLoads[0].items.push(item); dayLoads[0].minutes += item.minutes
-    })
+
+    const ordered = items.filter(i => i.order != null).sort((a, b) => (a.order as number) - (b.order as number))
+    const unordered = items.filter(i => i.order == null)
+
+    // Phase 1: Ordered items using center-of-mass distribution (same as rebalance)
+    if (ordered.length > 0) {
+      const totalMinutes = ordered.reduce((s, i) => s + i.minutes, 0)
+      let cumMinutes = 0
+      let prevDayIdx = 0
+      for (const item of ordered) {
+        const center = cumMinutes + item.minutes / 2
+        cumMinutes += item.minutes
+        const proportion = center / totalMinutes
+        let dayIdx = Math.floor(proportion * dayLoads.length)
+        dayIdx = Math.min(Math.max(dayIdx, prevDayIdx), dayLoads.length - 1)
+        dayLoads[dayIdx].items.push(item)
+        dayLoads[dayIdx].minutes += item.minutes
+        prevDayIdx = dayIdx
+      }
+      for (let i = 0; i < dayLoads.length - 1; i++) {
+        if (dayLoads[i].items.length === 0) {
+          let next = i + 1
+          while (next < dayLoads.length && dayLoads[next].items.length === 0) next++
+          if (next < dayLoads.length) {
+            const item = dayLoads[next].items.shift()!
+            dayLoads[next].minutes -= item.minutes
+            dayLoads[i].items.push(item)
+            dayLoads[i].minutes += item.minutes
+          }
+        }
+      }
+    }
+
+    // Phase 2: Unordered items greedily to the least-loaded day (same as rebalance)
+    ;[...unordered]
+      .sort((a,b) => b.minutes - a.minutes || a.name.localeCompare(b.name))
+      .forEach(item => {
+        dayLoads.sort((a, b) => a.minutes - b.minutes || a.key.localeCompare(b.key))
+        dayLoads[0].items.push(item)
+        dayLoads[0].minutes += item.minutes
+      })
+
     return dayLoads.filter(d => d.items.length > 0).sort((a, b) => a.key.localeCompare(b.key))
   }
 

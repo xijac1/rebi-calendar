@@ -145,13 +145,13 @@ export default function WelcomePage({
 
       {/* HERO */}
       <section className="hero">
-        <div className="eyebrow">
+        {/* <div className="eyebrow">
           <span className="eyebrow-dot"></span>
           Smart calendar rebalancing
-        </div>
+        </div> */}
         <h1>Never fall behind a<br />deadline <em>again</em></h1>
-        <p>Rebi Calendar automatically redistributes missed tasks into your remaining days — so you always have a clear, honest path to done.</p>
-        <div className="hero-cta">
+          <p>Automatically redistribute missed tasks into your remaining days. </p>
+          <div className="hero-cta">
           {user ? (
             <button className="btn-hero" onClick={() => router.push("/dashboard")}>
               Go to Dashboard
