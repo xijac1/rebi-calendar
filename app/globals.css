@@ -98,9 +98,76 @@ button, input, select { font: inherit; }
 }
 
 .persistent-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-display {
   font-size: 22px;
   font-weight: 700;
   white-space: nowrap;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.title-display:hover {
+  background: var(--surface2);
+}
+
+.title-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.title-input {
+  font-size: 22px;
+  font-weight: 700;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text);
+  outline: none;
+  width: 300px;
+}
+
+.title-input:focus {
+  border-color: var(--cal-accent);
+}
+
+.title-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.title-btn:hover {
+  background: var(--surface2);
+}
+
+.title-btn-check:hover {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.title-btn-x:hover {
+  color: #f87171;
+  border-color: #f87171;
 }
 
 .persistent-actions {

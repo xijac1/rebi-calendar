@@ -156,6 +156,7 @@ export default function CalendarView({
         calendarId: t.calendar_id || undefined,
         calendarName: cal?.name,
         calendarColor: calTheme?.accent,
+        start: t.start_time || undefined,
         order: t.order ?? undefined,
       })
     })
@@ -196,6 +197,9 @@ export default function CalendarView({
   const [apiKeyModal, setApiKeyModal] = useState(false)
   const [apiKeyInput, setApiKeyInput] = useState("")
   const [hasApiKey, setHasApiKey] = useState(false)
+  const [calendarName, setCalendarName] = useState(calendar.name)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState("")
 
   const isViewAll = calendar.id === "all"
   const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(
@@ -246,6 +250,21 @@ export default function CalendarView({
     }, { onConflict: "user_id" })
   }
 
+  async function saveCalendarTitle() {
+    const name = titleDraft.trim()
+    if (!name || name === calendarName) { setEditingTitle(false); return }
+    const { error } = await supabase.from("calendars").update({ name }).eq("id", calendar.id)
+    if (error) { showToast("Failed to save title"); return }
+    setCalendarName(name)
+    setEditingTitle(false)
+    showToast("Title updated")
+  }
+
+  function startEditingTitle() {
+    setTitleDraft(calendarName)
+    setEditingTitle(true)
+  }
+
   useEffect(() => {
     setHasApiKey(!!localStorage.getItem("groq_api_key"))
   }, [])
@@ -272,6 +291,7 @@ export default function CalendarView({
       duration_minutes: durationMinutes,
       scheduled_date: dayKey,
       completed: false,
+      start_time: taskStart || null,
     }).select("id").single()
     if (error) return null
     const taskId = data.id
@@ -363,11 +383,11 @@ export default function CalendarView({
     if (!mins) { showToast("Enter a valid duration like 1h or 25min"); return }
 
     if (editingTask) {
-      await supabase.from("tasks").update({ title: name, subject: taskTag || null, duration_minutes: mins }).eq("id", editingTask.task.id)
+      await supabase.from("tasks").update({ title: name, subject: taskTag || null, duration_minutes: mins, start_time: taskStart || null }).eq("id", editingTask.task.id)
       const timeStr = formatMinutes(mins)
       setTasks(prev => ({
         ...prev,
-        [editingTask.dayKey]: (prev[editingTask.dayKey]||[]).map(t => t.id===editingTask.task.id ? {...t, name, tag: taskTag, time: timeStr} : t)
+        [editingTask.dayKey]: (prev[editingTask.dayKey]||[]).map(t => t.id===editingTask.task.id ? {...t, name, tag: taskTag, time: timeStr, start: taskStart} : t)
       }))
       setEditingTask(null)
       showToast("Task updated")
@@ -614,7 +634,23 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
   return (
     <div className="schedule-app" style={themeVars}>
       <div className="persistent-topbar">
-        <h1 className="persistent-title">{calendar.name}</h1>
+        <div className="persistent-title">
+          {editingTitle ? (
+            <div className="title-edit-group">
+              <input
+                className="title-input"
+                value={titleDraft}
+                onChange={e => setTitleDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") saveCalendarTitle(); if (e.key === "Escape") setEditingTitle(false) }}
+                autoFocus
+              />
+              <button className="title-btn title-btn-check" onClick={saveCalendarTitle} type="button" aria-label="Save title">&#10003;</button>
+              <button className="title-btn title-btn-x" onClick={() => setEditingTitle(false)} type="button" aria-label="Cancel">&#10005;</button>
+            </div>
+          ) : (
+            <span className="title-display" onClick={startEditingTitle} title="Click to edit">{calendarName}</span>
+          )}
+        </div>
         <div className="persistent-actions">
           <select className="view-select" value={viewMode} onChange={e => setViewMode(e.target.value as ViewMode)}>
             <option value="weekly">Weekly View</option>
