@@ -284,8 +284,8 @@ export default function WelcomePage({
       {/* HOW IT WORKS */}
       <section className="section" id="how">
         <div className="section-label">How it works</div>
-        <h2 className="section-title">Three steps to staying on track</h2>
-        <p className="section-sub">Rebi works with how you actually live — not the perfect schedule you planned on Sunday night.</p>
+        <h2 className="section-title">Stay on track</h2>
+        {/* <p className="section-sub">Rebi works with how you actually live — not the perfect schedule you planned on Sunday night.</p> */}
         <div className="steps">
           <div className="step-card">
             <div className="step-num">STEP 1</div>
@@ -295,7 +295,7 @@ export default function WelcomePage({
               </svg>
             </div>
             <div className="step-title">Create a calendar</div>
-            <div className="step-desc">Give it a name, a start date, and an end date. Add your tasks or milestones — daily, weekly, or custom.</div>
+            {/* <div className="step-desc">Give it a name, a start date, and an end date. Add your tasks or milestones — daily, weekly, or custom.</div> */}
           </div>
           <div className="step-card">
             <div className="step-num">STEP 2</div>
@@ -305,7 +305,7 @@ export default function WelcomePage({
               </svg>
             </div>
             <div className="step-title">Work at your pace</div>
-            <div className="step-desc">Check off what you finish. Skip a day — life happens. Rebi tracks what was done and what drifted.</div>
+            {/* <div className="step-desc">Check off what you finish. Skip a day — life happens. Rebi tracks what was done and what drifted.</div> */}
           </div>
           <div className="step-card">
             <div className="step-num">STEP 3</div>
@@ -315,7 +315,7 @@ export default function WelcomePage({
               </svg>
             </div>
             <div className="step-title">Hit Rebalance</div>
-            <div className="step-desc">One click spreads everything you missed evenly across the days remaining before your end date. Your plan is fresh again.</div>
+            {/* <div className="step-desc">One click spreads everything you missed evenly across the days remaining before your end date. Your plan is fresh again.</div> */}
           </div>
         </div>
       </section>
@@ -374,7 +374,7 @@ export default function WelcomePage({
       {/* CTA BAND */}
       <div className="cta-band">
         <h2>Your next deadline is waiting.</h2>
-        <p>Start building a calendar that bends to your life — not the other way around.</p>
+        <p>Start building a calendar.</p>
         <button className="btn-hero" onClick={() => user ? router.push("/dashboard") : setShowSignup(true)}>
           {user ? "Go to Dashboard" : "Create your first calendar"}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
