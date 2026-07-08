@@ -194,9 +194,6 @@ export default function CalendarView({
   const [aiInstructions, setAiInstructions] = useState("")
   const [aiModel, setAiModel] = useState("llama-3.3-70b-versatile")
   const [aiLoading, setAiLoading] = useState(false)
-  const [apiKeyModal, setApiKeyModal] = useState(false)
-  const [apiKeyInput, setApiKeyInput] = useState("")
-  const [hasApiKey, setHasApiKey] = useState(false)
   const [calendarName, setCalendarName] = useState(calendar.name)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
@@ -264,10 +261,6 @@ export default function CalendarView({
     setTitleDraft(calendarName)
     setEditingTitle(true)
   }
-
-  useEffect(() => {
-    setHasApiKey(!!localStorage.getItem("groq_api_key"))
-  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -864,7 +857,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
 
       <aside className={`settings-panel${settingsOpen?" open":""}`}>
         <button className="settings-close" onClick={()=>setSettingsOpen(false)} type="button">&times;</button>
-        <h3>Settings</h3>
+        <h3>Calendar Settings</h3>
         <div className="settings-row">
           <label>Color Theme</label>
           <div className="theme-grid">
@@ -951,27 +944,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
             Add Bulk
           </button>
         </div>
-        <div className="settings-section-title">APIs</div>
-        <div className="settings-row">
-          <label>API Keys</label>
-          <button className="btn" onClick={() => { setApiKeyInput(localStorage.getItem("groq_api_key") || ""); setApiKeyModal(true) }} type="button">
-            {hasApiKey ? "UPDATE KEY" : "ADD KEY"}
-          </button>
-        </div>
       </aside>
-
-      {/* API Key modal */}
-      <div className={`modal-overlay${apiKeyModal?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setApiKeyModal(false)}}>
-        <div className="modal">
-          <h3>Groq API Key</h3>
-          <label>Enter your Groq API key</label>
-          <input type="password" value={apiKeyInput} onChange={e=>setApiKeyInput(e.target.value)} placeholder="gsk_..." />
-          <div className="modal-actions">
-            <button className="btn-cancel" onClick={()=>setApiKeyModal(false)} type="button">Cancel</button>
-            <button className="btn-primary" onClick={()=>{localStorage.setItem("groq_api_key", apiKeyInput.trim());setHasApiKey(true);setApiKeyModal(false);showToast("API key saved")}} type="button">Save</button>
-          </div>
-        </div>
-      </div>
 
       {/* Bulk add modal */}
       <div className={`modal-overlay${bulkAddOpen?" open":""}`} onClick={e=>{if(e.target===e.currentTarget)setBulkAddOpen(false)}}>

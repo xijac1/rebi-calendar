@@ -951,6 +951,254 @@ button, input, select { font: inherit; }
 
 
 
+/* ── Settings Page Layout ── */
+
+.settings-layout {
+  display: flex;
+  flex: 1;
+  align-self: stretch;
+  min-height: 0;
+}
+
+.settings-nav {
+  width: 220px;
+  min-width: 220px;
+  border-right: 1px solid var(--border);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #161616;
+}
+
+.settings-nav-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  padding: 24px 16px 12px;
+}
+
+.settings-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s, color 0.14s;
+  font-family: inherit;
+  border-left: 2px solid transparent;
+}
+
+.settings-nav-btn:hover {
+  background: #1f1f1f;
+  color: var(--text);
+}
+
+.settings-nav-btn.active {
+  background: #2f0505;
+  color: #dd0426;
+  border-left-color: #dd0426;
+}
+
+.settings-nav-btn svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.settings-nav-btn.active svg {
+  opacity: 1;
+}
+
+.settings-content {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.settings-api-page h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.settings-api-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  max-width: 500px;
+}
+
+.settings-api-field {
+  margin-bottom: 20px;
+  max-width: 500px;
+}
+
+.settings-api-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.settings-api-field input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: monospace;
+}
+
+.settings-api-field input:focus {
+  outline: none;
+  border-color: var(--accent-p, #dd0426);
+}
+
+.settings-api-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: 500px;
+}
+
+.settings-api-success {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #22c55e;
+}
+
+/* ── Settings Profile ── */
+
+.settings-nav-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #cc0422 0%, #990318 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.settings-profile-page h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.settings-profile-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  max-width: 500px;
+}
+
+.settings-profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #cc0422 0%, #990318 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.settings-profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-profile-name-display {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.settings-profile-email-display {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.settings-profile-field {
+  margin-bottom: 20px;
+  max-width: 500px;
+}
+
+.settings-profile-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.settings-profile-field input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.settings-profile-field input:focus {
+  outline: none;
+  border-color: var(--accent-p, #dd0426);
+}
+
+.settings-profile-email-input {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-profile-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  max-width: 500px;
+}
+
+.settings-profile-success {
+  font-size: 13px;
+  color: #22c55e;
+}
+
+/* ── Settings Panel (CalendarView popup) ── */
+
 .settings-panel {
   display: none;
   position: fixed;
@@ -1929,6 +2177,15 @@ button, input, select { font: inherit; }
   color: #fff;
   flex-shrink: 0;
   letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+.avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .profile-name {
