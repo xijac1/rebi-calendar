@@ -197,6 +197,9 @@ export default function CalendarView({
   const [calendarName, setCalendarName] = useState(calendar.name)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterCalendars, setFilterCalendars] = useState<Set<string>>(new Set())
+  const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
 
   const isViewAll = calendar.id === "all"
   const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(
@@ -623,10 +626,56 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
     return { total, done, totalMins, pct }
   }, [tasks])
 
+  const calNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    if (allCalendars) allCalendars.forEach(c => map.set(c.id, c.name))
+    return map
+  }, [allCalendars])
+
+  const allFilterTags = useMemo(() => {
+    const tags = new Set<string>()
+    Object.values(tasks).forEach(dayTasks => dayTasks.forEach(t => { if (t.tag) tags.add(t.tag) }))
+    return [...tags]
+  }, [tasks])
+
+  const filterLabel = useMemo(() => {
+    if (filterCalendars.size === 0 && filterTags.size === 0) return "filter"
+    const parts: string[] = []
+    if (filterCalendars.size > 0) {
+      const names = [...filterCalendars].map(id => calNameMap.get(id) || id).join(", ")
+      parts.push(names)
+    }
+    if (filterTags.size > 0) {
+      parts.push([...filterTags].join(", "))
+    }
+    return `filter: ${parts.join(" · ")}`
+  }, [filterCalendars, filterTags, calNameMap])
+
+  const filteredTasks = useMemo(() => {
+    if (filterCalendars.size === 0 && filterTags.size === 0) return tasks
+    const result: TasksByDate = {}
+    for (const [key, dayTasks] of Object.entries(tasks)) {
+      const filtered = dayTasks.filter(t => {
+        if (filterCalendars.size > 0 && t.calendarId != null && !filterCalendars.has(t.calendarId)) return false
+        if (filterTags.size > 0 && !filterTags.has(t.tag)) return false
+        return true
+      })
+      if (filtered.length > 0) result[key] = filtered
+    }
+    return result
+  }, [tasks, filterCalendars, filterTags])
+
   const rebalanceButton = (
     <button className="btn rebalance-btn" onClick={openRebalanceModal} type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
       Rebalance
+    </button>
+  )
+
+  const filterButton = (
+    <button className={`filter-trigger${filterCalendars.size>0||filterTags.size>0?" active":""}`} onClick={()=>setFilterOpen(true)} type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:13,height:13}}><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+      {filterLabel}
     </button>
   )
 
@@ -677,12 +726,12 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
                 <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()-7);return n})} type="button">&lt;</button>
                 <button className="today-btn" onClick={()=>setCurrentWeekStart(getWeekStart(new Date()))} type="button">Today</button>
                 <button className="nav-btn" onClick={()=>setCurrentWeekStart(p=>{const n=new Date(p);n.setDate(n.getDate()+7);return n})} type="button">&gt;</button>
-                {!isViewAll && (
+                {!isViewAll ? (
                   <button className="btn" onClick={openRebalanceModal} type="button">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
                     Rebalance
                   </button>
-                )}
+                ) : filterButton}
               </div>
               <div className="day-stats">
                 {(() => {
@@ -726,7 +775,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
                 })}
                 <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
                 {days.map(day=>{
-                  const k=dateKey(day), dayTasks=tasks[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
+                  const k=dateKey(day), dayTasks=(isViewAll?filteredTasks:tasks)[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
                   return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
                     {dayTasks.map(task=>
                       <div className={`task-card${task.done?" done":""}`} key={task.id} onClick={()=>handleEditTask(k,task)}>
@@ -753,12 +802,12 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
         )}
         {viewMode === "monthly" && (
           <MonthlyView
-            tasks={tasks}
+            tasks={isViewAll ? filteredTasks : tasks}
             onToggleTask={toggleTask}
             onDeleteTask={deleteTask}
             onAddTask={isViewAll ? undefined : handleAddTask}
             onEditTask={handleEditTask}
-            rebalanceButton={isViewAll ? undefined : rebalanceButton}
+            rebalanceButton={isViewAll ? filterButton : rebalanceButton}
             isViewAll={isViewAll}
             progressMode={progressMode}
             allTasksStats={allTasksStats}
@@ -766,11 +815,11 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
         )}
         {viewMode === "daily" && (
           <DayView
-            tasks={tasks}
+            tasks={isViewAll ? filteredTasks : tasks}
             onToggleTask={toggleTask}
             onAddTask={isViewAll ? undefined : handleAddTask}
             onEditTask={handleEditTask}
-            rebalanceButton={isViewAll ? undefined : rebalanceButton}
+            rebalanceButton={isViewAll ? filterButton : rebalanceButton}
             isViewAll={isViewAll}
             progressMode={progressMode}
             allTasksStats={allTasksStats}
@@ -854,6 +903,53 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
           </div>
         </div>
       </div>
+
+      {/* Filter modal */}
+      {filterOpen && (
+        <div className="modal-overlay open" onClick={e=>{if(e.target===e.currentTarget)setFilterOpen(false)}}>
+          <div className="modal filter-modal">
+            <h3>Filter</h3>
+            {allCalendars && allCalendars.length > 0 && (
+              <div className="filter-section">
+                <h4>Calendars</h4>
+                <div className="filter-options">
+                  {allCalendars.map(cal => (
+                    <label key={cal.id} className="filter-check">
+                      <input
+                        type="checkbox"
+                        checked={filterCalendars.has(cal.id)}
+                        onChange={()=>{const n=new Set(filterCalendars);if(n.has(cal.id))n.delete(cal.id);else n.add(cal.id);setFilterCalendars(n)}}
+                      />
+                      <span>{cal.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            {allFilterTags.length > 0 && (
+              <div className="filter-section">
+                <h4>Tags</h4>
+                <div className="filter-options">
+                  {allFilterTags.map(tag => (
+                    <label key={tag} className="filter-check">
+                      <input
+                        type="checkbox"
+                        checked={filterTags.has(tag)}
+                        onChange={()=>{const n=new Set(filterTags);if(n.has(tag))n.delete(tag);else n.add(tag);setFilterTags(n)}}
+                      />
+                      <span>{tagLabel(tag)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={()=>{setFilterCalendars(new Set());setFilterTags(new Set())}} type="button">Clear All</button>
+              <button className="btn-primary" onClick={()=>setFilterOpen(false)} type="button">Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <aside className={`settings-panel${settingsOpen?" open":""}`}>
         <button className="settings-close" onClick={()=>setSettingsOpen(false)} type="button">&times;</button>
