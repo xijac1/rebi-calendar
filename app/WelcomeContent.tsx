@@ -110,7 +110,7 @@ export default function WelcomePage({
           {user ? (
             <div className="user-menu-wrap">
               <button className="user-avatar-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
-                <div className="user-avatar">{user.email?.charAt(0).toUpperCase() || "U"}</div>
+                <div className="user-avatar" style={user.user_metadata?.avatar_url ? { backgroundImage: `url(${user.user_metadata.avatar_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>{!user.user_metadata?.avatar_url && <span>{user.email?.charAt(0).toUpperCase() || "U"}</span>}</div>
               </button>
               {showUserMenu && (
                 <>

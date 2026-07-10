@@ -241,9 +241,9 @@ button, input, select { font: inherit; }
 .filter-modal { max-width: 380px; }
 .filter-section { margin-bottom: 16px; }
 .filter-section h4 { font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted, #888); text-transform: uppercase; letter-spacing: 0.5px; }
-.filter-options { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
-.filter-check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; padding: 2px 0; }
-.filter-check input[type="checkbox"] { accent-color: var(--accent, #dd0426); }
+.filter-options { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-height: 200px; overflow-y: auto; }
+.filter-chip { display: inline-flex; align-items: center; font-size: 14px; cursor: pointer; padding: 1px 4px 1px 7px; border: 1.5px solid transparent; border-radius: 3px; background: none; color: var(--text-muted, #888); font-family: inherit; line-height: 1; width: fit-content; }
+.filter-chip.selected { border-color: var(--accent, #dd0426); color: var(--accent, #dd0426); }
 
 .card {
   background: var(--surface);
@@ -2530,7 +2530,10 @@ button, input, select { font: inherit; }
   color: #fff;
   letter-spacing: 0.02em;
   user-select: none;
+  overflow: hidden;
 }
+
+
 
 .user-menu-overlay {
   position: fixed;

@@ -633,10 +633,13 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
   }, [allCalendars])
 
   const allFilterTags = useMemo(() => {
+    if (filterCalendars.size === 0) return []
     const tags = new Set<string>()
-    Object.values(tasks).forEach(dayTasks => dayTasks.forEach(t => { if (t.tag) tags.add(t.tag) }))
+    Object.values(tasks).forEach(dayTasks => dayTasks.forEach(t => {
+      if (t.tag && t.calendarId != null && filterCalendars.has(t.calendarId)) tags.add(t.tag)
+    }))
     return [...tags]
-  }, [tasks])
+  }, [tasks, filterCalendars])
 
   const filterLabel = useMemo(() => {
     if (filterCalendars.size === 0 && filterTags.size === 0) return "filter"
@@ -914,14 +917,9 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
                 <h4>Calendars</h4>
                 <div className="filter-options">
                   {allCalendars.map(cal => (
-                    <label key={cal.id} className="filter-check">
-                      <input
-                        type="checkbox"
-                        checked={filterCalendars.has(cal.id)}
-                        onChange={()=>{const n=new Set(filterCalendars);if(n.has(cal.id))n.delete(cal.id);else n.add(cal.id);setFilterCalendars(n)}}
-                      />
+                    <button key={cal.id} className={`filter-chip${filterCalendars.has(cal.id)?" selected":""}`} onClick={()=>{const n=new Set(filterCalendars);if(n.has(cal.id))n.delete(cal.id);else n.add(cal.id);setFilterCalendars(n)}}>
                       <span>{cal.name}</span>
-                    </label>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -931,14 +929,9 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
                 <h4>Tags</h4>
                 <div className="filter-options">
                   {allFilterTags.map(tag => (
-                    <label key={tag} className="filter-check">
-                      <input
-                        type="checkbox"
-                        checked={filterTags.has(tag)}
-                        onChange={()=>{const n=new Set(filterTags);if(n.has(tag))n.delete(tag);else n.add(tag);setFilterTags(n)}}
-                      />
+                    <button key={tag} className={`filter-chip${filterTags.has(tag)?" selected":""}`} onClick={()=>{const n=new Set(filterTags);if(n.has(tag))n.delete(tag);else n.add(tag);setFilterTags(n)}}>
                       <span>{tagLabel(tag)}</span>
-                    </label>
+                    </button>
                   ))}
                 </div>
               </div>
