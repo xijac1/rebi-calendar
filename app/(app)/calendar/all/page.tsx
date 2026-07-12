@@ -25,7 +25,7 @@ export default async function AllCalendarsPage() {
 
   return (
     <CalendarView
-      calendar={{ id: "all", name: "View All", description: null, start_date: null, due_date: null, color_theme: null, progress_mode: null }}
+      calendar={{ id: "all", name: "View All", description: null, start_date: null, due_date: null, color_theme: null, progress_mode: null, icon: null }}
       initialTasks={(tasks ?? [])      .map(t => ({
         id: t.id,
         title: t.title,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import type { TaskRow, DayOffRow, CalendarRow } from "./[id]/page"
+import EmojiPicker from "@/app/components/EmojiPicker"
 import type { Task, TasksByDate, SubjectTag } from "./views/helpers"
 import {
   dateKey, dateFromKey, formatDateLabel, isSameDate,
@@ -195,6 +196,7 @@ export default function CalendarView({
   const [aiModel, setAiModel] = useState("llama-3.3-70b-versatile")
   const [aiLoading, setAiLoading] = useState(false)
   const [calendarName, setCalendarName] = useState(calendar.name)
+  const [calendarIcon, setCalendarIcon] = useState(calendar.icon || "📅")
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
   const [filterOpen, setFilterOpen] = useState(false)
@@ -258,6 +260,14 @@ export default function CalendarView({
     setCalendarName(name)
     setEditingTitle(false)
     showToast("Title updated")
+  }
+
+  async function saveCalendarIcon(emoji: string) {
+    setCalendarIcon(emoji)
+    if (!isViewAll) {
+      await supabase.from("calendars").update({ icon: emoji }).eq("id", calendar.id)
+    }
+    showToast("Icon updated")
   }
 
   function startEditingTitle() {
@@ -686,6 +696,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
     <div className="schedule-app" style={themeVars}>
       <div className="persistent-topbar">
         <div className="persistent-title">
+          <EmojiPicker value={calendarIcon} onChange={saveCalendarIcon} triggerClass="title-icon" />
           {editingTitle ? (
             <div className="title-edit-group">
               <input
@@ -969,6 +980,10 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
               />
             ))}
           </div>
+        </div>
+        <div className="settings-row">
+          <label>Icon</label>
+          <EmojiPicker value={calendarIcon} onChange={saveCalendarIcon} />
         </div>
         <div className="settings-row">
           <label>Progress Bar</label>

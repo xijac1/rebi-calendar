@@ -67,7 +67,9 @@ export default function SettingsPage() {
       id: "profile",
       label: "Profile",
       icon: (
-        <div className="settings-nav-avatar">{initial}</div>
+        <div className="settings-nav-avatar">
+          {avatarUrl ? <img src={avatarUrl} alt="" className="settings-nav-avatar-img" /> : <span>{initial}</span>}
+        </div>
       ),
     },
     {

@@ -7,6 +7,7 @@ export type CalendarRow = {
   start_date: string | null
   due_date: string | null
   created_at: string | null
+  icon: string | null
 }
 
 export default async function DashboardPage() {
@@ -15,7 +16,7 @@ export default async function DashboardPage() {
 
   const { data: calendars } = await supabase
     .from("calendars")
-    .select("id, name, start_date, due_date, created_at")
+    .select("id, name, start_date, due_date, created_at, icon")
     .order("created_at", { ascending: false })
 
   return (

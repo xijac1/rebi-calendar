@@ -4,6 +4,7 @@ import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import type { CalendarRow } from "./page"
+import EmojiPicker from "@/app/components/EmojiPicker"
 
 export default function DashboardContent({
   initialCalendars,
@@ -14,6 +15,7 @@ export default function DashboardContent({
   const [calendars, setCalendars] = useState(initialCalendars)
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState("")
+  const [newIcon, setNewIcon] = useState("📅")
   const [newStart, setNewStart] = useState("")
   const [newDue, setNewDue] = useState("")
   const [newDesc, setNewDesc] = useState("")
@@ -37,11 +39,12 @@ export default function DashboardContent({
       .insert({
         user_id: user.id,
         name: newName.trim(),
+        icon: newIcon,
         description: newDesc.trim() || null,
         start_date: newStart || null,
         due_date: newDue || null,
       })
-      .select("id, name, start_date, due_date, created_at")
+      .select("id, name, start_date, due_date, created_at, icon")
       .single()
 
     setCreating(false)
@@ -54,6 +57,7 @@ export default function DashboardContent({
     setCalendars((prev) => [data as CalendarRow, ...prev])
     setShowCreate(false)
     setNewName("")
+    setNewIcon("📅")
     setNewStart("")
     setNewDue("")
     setNewDesc("")
@@ -120,10 +124,14 @@ export default function DashboardContent({
                 onClick={() => router.push(`/calendar/${cal.id}`)}
               >
                 <div className="cal-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-                  </svg>
+                  {cal.icon ? (
+                    <span className="cal-icon-emoji">{cal.icon}</span>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                    </svg>
+                  )}
                 </div>
                 <div className="cal-info">
                   <div className="cal-name">{cal.name}</div>
@@ -156,7 +164,10 @@ export default function DashboardContent({
             <p className="auth-sub">Set up a new study schedule or project timeline</p>
             <div className="auth-field">
               <label>Name</label>
-              <input type="text" placeholder="e.g. Physics Final" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <div className="auth-field-row">
+                <EmojiPicker value={newIcon} onChange={setNewIcon} />
+                <input type="text" placeholder="e.g. Physics Final" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              </div>
             </div>
             <div className="auth-field">
               <label>Description (optional)</label>
