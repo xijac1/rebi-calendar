@@ -299,6 +299,15 @@ export default function CalendarView({
   },[toast])
 
   useEffect(() => {
+    const saved = localStorage.getItem("calendar_view_mode") as ViewMode | null
+    if (saved) setViewMode(saved)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem("calendar_view_mode", viewMode)
+  }, [viewMode])
+
+  useEffect(() => {
     function closeOnEscape(e: KeyboardEvent) {
       if (e.key==="Escape") { setAddingToDay(null); setEditingTask(null); setSettingsOpen(false); setRebalanceOpen(false) }
     }
