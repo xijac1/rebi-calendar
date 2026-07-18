@@ -43,6 +43,7 @@ export default function DashboardContent({
         description: newDesc.trim() || null,
         start_date: newStart || null,
         due_date: newDue || null,
+        progress_mode: "show_all",
       })
       .select("id, name, start_date, due_date, created_at, icon")
       .single()

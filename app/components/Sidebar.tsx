@@ -45,11 +45,7 @@ export default function Sidebar({ userEmail, userName, avatarUrl }: { userEmail:
     <nav className={`sidebar${sidebarExpanded ? " expanded" : ""}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <svg className="logo-icon" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="13" fill="#2f0505" stroke="#dd0426" strokeWidth="1.5"/>
-            <path d="M9 18 L14 9 L19 18" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M10.5 15.5 H17.5" stroke="#dd0426" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+          <img src="/rebi_logo.png" alt="Rebi" className="logo-icon" />
           <span className="logo-wordmark">Rebi</span>
         </div>
         <button

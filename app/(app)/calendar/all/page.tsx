@@ -13,7 +13,7 @@ export default async function AllCalendarsPage() {
   const { data: tasks } = ids.length
     ? await supabase
         .from("tasks")
-        .select("id, title, subject, duration_minutes, scheduled_date, completed, calendar_id, \"order\", start_time")
+        .select("id, title, subject, duration_minutes, scheduled_date, completed, calendar_id, \"order\", start_time, description")
         .in("calendar_id", ids)
         .order("scheduled_date", { ascending: true })
     : { data: [] }
@@ -36,6 +36,7 @@ export default async function AllCalendarsPage() {
         calendar_id: t.calendar_id,
         order: t.order,
         start_time: t.start_time,
+        description: t.description,
       }))}
       initialDaysOff={[]}
       allCalendars={calendars ?? []}

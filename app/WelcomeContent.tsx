@@ -94,11 +94,7 @@ export default function WelcomePage({
       {/* NAV */}
       <nav className="welcome-nav">
         <a className="nav-logo" href="#">
-          <svg className="nav-logo-icon" viewBox="0 0 30 30" fill="none">
-            <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
-            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
-          </svg>
+          <img src="/rebi_logo.png" alt="Rebi" className="nav-logo-icon" />
           <span className="nav-logo-name">Rebi<span>Calendar</span></span>
         </a>
         <div className="nav-links">
@@ -384,11 +380,7 @@ export default function WelcomePage({
       {/* FOOTER */}
       <footer className="welcome-footer">
         <a className="footer-logo" href="#">
-          <svg width="22" height="22" viewBox="0 0 30 30" fill="none">
-            <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
-            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
-          </svg>
+          <img src="/rebi_logo.png" alt="Rebi" width="22" height="22" />
           <span>Rebi<em>Calendar</em></span>
         </a>
         <span className="footer-copy">&copy; 2026 RebiCalendar. All rights reserved.</span>
@@ -405,11 +397,7 @@ export default function WelcomePage({
           <div className="auth-card">
             <button className="auth-close" onClick={() => setShowLogin(false)}>&times;</button>
             <div className="auth-logo">
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
-                <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
-              </svg>
+              <img src="/rebi_logo.png" alt="Rebi" width="30" height="30" />
               <span className="auth-logo-text">Rebi<span>Calendar</span></span>
             </div>
             <h2 className="auth-heading">Welcome back</h2>
@@ -473,11 +461,7 @@ export default function WelcomePage({
           <div className="auth-card auth-card-wide">
             <button className="auth-close" onClick={() => setShowSignup(false)}>&times;</button>
             <div className="auth-logo">
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
-                <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
-              </svg>
+              <img src="/rebi_logo.png" alt="Rebi" width="30" height="30" />
               <span className="auth-logo-text">Rebi<span>Calendar</span></span>
             </div>
             <h2 className="auth-heading">Create your account</h2>

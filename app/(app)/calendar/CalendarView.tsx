@@ -159,6 +159,7 @@ export default function CalendarView({
         calendarColor: calTheme?.accent,
         start: t.start_time || undefined,
         order: t.order ?? undefined,
+        description: t.description || undefined,
       })
     })
     return grouped
@@ -174,6 +175,7 @@ export default function CalendarView({
   const [taskTag, setTaskTag] = useState<SubjectTag>("")
   const [taskTime, setTaskTime] = useState("")
   const [taskStart, setTaskStart] = useState("09:00")
+  const [taskDescription, setTaskDescription] = useState("")
   const [dayOffInput, setDayOffInput] = useState("")
   const [rebalanceOpen, setRebalanceOpen] = useState(false)
   const [rebalanceStartDate, setRebalanceStartDate] = useState(calendar.start_date || dateKey(new Date()))
@@ -298,13 +300,14 @@ export default function CalendarView({
       scheduled_date: dayKey,
       completed: false,
       start_time: taskStart || null,
+      description: taskDescription || null,
     }).select("id").single()
     if (error) return null
     const taskId = data.id
     const timeStr = formatMinutes(durationMinutes)
     setTasks(prev => ({
       ...prev,
-      [dayKey]: [...(prev[dayKey]||[]), { id: taskId, name: title, tag: subject, time: timeStr, start: taskStart, done: false }]
+      [dayKey]: [...(prev[dayKey]||[]), { id: taskId, name: title, tag: subject, time: timeStr, start: taskStart, done: false, description: taskDescription || undefined }]
     }))
   }
 
@@ -380,11 +383,11 @@ export default function CalendarView({
   }
 
   function openModal(dayKey: string) {
-    setEditingTask(null); setAddingToDay(dayKey); setTaskName(""); setTaskTag(""); setTaskTime(""); setTaskStart("09:00")
+    setEditingTask(null); setAddingToDay(dayKey); setTaskName(""); setTaskTag(""); setTaskTime(""); setTaskStart("09:00"); setTaskDescription("")
   }
 
   function openEditModal(dayKey: string, task: Task) {
-    setAddingToDay(null); setEditingTask({ dayKey, task }); setTaskName(task.name); setTaskTag(task.tag); setTaskTime(task.time); setTaskStart(task.start || "09:00")
+    setAddingToDay(null); setEditingTask({ dayKey, task }); setTaskName(task.name); setTaskTag(task.tag); setTaskTime(task.time); setTaskStart(task.start || "09:00"); setTaskDescription(task.description || "")
   }
 
   async function saveTask() {
@@ -395,11 +398,11 @@ export default function CalendarView({
     if (!mins) { showToast("Enter a valid duration like 1h or 25min"); return }
 
     if (editingTask) {
-      await supabase.from("tasks").update({ title: name, subject: taskTag || null, duration_minutes: mins, start_time: taskStart || null }).eq("id", editingTask.task.id)
+      await supabase.from("tasks").update({ title: name, subject: taskTag || null, duration_minutes: mins, start_time: taskStart || null, description: taskDescription || null }).eq("id", editingTask.task.id)
       const timeStr = formatMinutes(mins)
       setTasks(prev => ({
         ...prev,
-        [editingTask.dayKey]: (prev[editingTask.dayKey]||[]).map(t => t.id===editingTask.task.id ? {...t, name, tag: taskTag, time: timeStr, start: taskStart} : t)
+        [editingTask.dayKey]: (prev[editingTask.dayKey]||[]).map(t => t.id===editingTask.task.id ? {...t, name, tag: taskTag, time: timeStr, start: taskStart, description: taskDescription || undefined} : t)
       }))
       setEditingTask(null)
       showToast("Task updated")
@@ -846,6 +849,8 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
           </div>
           <label>Task Name</label>
           <input type="text" value={taskName} onChange={e=>setTaskName(e.target.value)} placeholder="e.g. Energy & Momentum Videos"/>
+          <label>Description</label>
+          <textarea value={taskDescription} onChange={e=>setTaskDescription(e.target.value)} placeholder="Optional notes or details" rows={2} style={{ resize: "none" }} />
           <label>Type</label>
           <input type="text" value={taskTag} onChange={e=>setTaskTag(e.target.value)} placeholder="e.g. Physics, Math, etc." />
           {viewMode === "daily" ? (
@@ -938,8 +943,8 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
                   ))}
                 </div>
               </div>
-            )}
-            <div className="modal-actions">
+          )}
+          <div className="modal-actions">
               <button className="btn-cancel" onClick={()=>{setFilterCalendars(new Set());setFilterTags(new Set())}} type="button">Clear All</button>
               <button className="btn-primary" onClick={()=>setFilterOpen(false)} type="button">Done</button>
             </div>

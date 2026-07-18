@@ -26,11 +26,7 @@ export default function LoginPage() {
     <div className="auth-full-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-            <circle cx="15" cy="15" r="14" fill="#2f0505" stroke="#dd0426" strokeWidth="1.4"/>
-            <path d="M9.5 20.5 L15 10 L20.5 20.5" stroke="#dd0426" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <path d="M11.5 17.5 H18.5" stroke="#dd0426" strokeWidth="1.6" strokeLinecap="round"/>
-          </svg>
+          <img src="/rebi_logo.png" alt="Rebi" width="30" height="30" />
           <span className="auth-logo-text">Rebi<span>Calendar</span></span>
         </div>
         <h2 className="auth-heading">Welcome back</h2>
