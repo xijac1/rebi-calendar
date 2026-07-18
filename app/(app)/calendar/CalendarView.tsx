@@ -462,6 +462,18 @@ export default function CalendarView({
     })
   }
 
+  async function handleUpdateTaskTime(taskId: string, newStart: string, dayKey: string) {
+    const { error } = await supabase.from("tasks").update({ start_time: newStart }).eq("id", taskId)
+    if (error) { console.error("Failed to update task time", error); return }
+    setTasks(prev => {
+      const next = { ...prev }
+      if (next[dayKey]) {
+        next[dayKey] = next[dayKey].map(t => t.id === taskId ? { ...t, start: newStart } : t)
+      }
+      return next
+    })
+  }
+
   async function deleteTask(dayKey: string, id: string) {
     await supabase.from("tasks").delete().eq("id", id)
     setTasks(prev => {
@@ -883,6 +895,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
             onToggleTask={toggleTask}
             onAddTask={isViewAll ? undefined : handleAddTask}
             onEditTask={handleEditTask}
+            onUpdateTaskTime={handleUpdateTaskTime}
             rebalanceButton={isViewAll ? filterButton : rebalanceButton}
             isViewAll={isViewAll}
             progressMode={progressMode}
