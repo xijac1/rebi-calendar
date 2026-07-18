@@ -460,6 +460,23 @@ button, input, select { font: inherit; }
 .task-card.done { opacity: 0.45; }
 .task-card.done .task-name { text-decoration: line-through; }
 
+.task-card.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.day-cell.drop-target {
+  outline: 2px dashed var(--cal-accent, #dd0426);
+  outline-offset: -2px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.drag-overlay {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: rotate(3deg);
+  pointer-events: none;
+}
+
 .task-top {
   display: flex;
   align-items: flex-start;

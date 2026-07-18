@@ -7,6 +7,17 @@ import type { TaskRow, DayOffRow, CalendarRow } from "./[id]/page"
 import EmojiPicker from "@/app/components/EmojiPicker"
 import type { Task, TasksByDate, SubjectTag } from "./views/helpers"
 import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core"
+import {
   dateKey, dateFromKey, formatDateLabel, isSameDate,
   parseDurationToMinutes, formatMinutes, getWeekStart,
   MONTH_NAMES, SHORT_MONTHS, DAYS, tagLabel,
@@ -204,6 +215,10 @@ export default function CalendarView({
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterCalendars, setFilterCalendars] = useState<Set<string>>(new Set())
   const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
+  const [activeDragTask, setActiveDragTask] = useState<{ task: Task; dayKey: string } | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  )
 
   const isViewAll = calendar.id === "all"
   const [progressMode, setProgressMode] = useState<"current_view" | "show_all">(
@@ -417,6 +432,34 @@ export default function CalendarView({
     const task = tasks[dayKey]?.find(t => t.id === id)
     if (!task) return
     toggleTaskDone(dayKey, id, task.done)
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event
+    const task = active.data.current?.task as Task
+    const dayKey = active.data.current?.dayKey as string
+    if (task) setActiveDragTask({ task, dayKey })
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveDragTask(null)
+    if (!over) return
+    const sourceDayKey = active.data.current?.dayKey as string
+    const targetDayKey = over.id as string
+    const task = active.data.current?.task as Task
+    if (!sourceDayKey || !targetDayKey || !task || sourceDayKey === targetDayKey) return
+
+    const { error } = await supabase.from("tasks").update({ scheduled_date: targetDayKey }).eq("id", task.id)
+    if (error) { console.error("Failed to move task", error); return }
+
+    setTasks(prev => {
+      const next = { ...prev }
+      next[sourceDayKey] = (next[sourceDayKey] || []).filter(t => t.id !== task.id)
+      if (next[sourceDayKey].length === 0) delete next[sourceDayKey]
+      next[targetDayKey] = [...(next[targetDayKey] || []), task]
+      return next
+    })
   }
 
   async function deleteTask(dayKey: string, id: string) {
@@ -773,39 +816,51 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
               </div>
             </div>
             <div className="calendar-outer">
-              <div className="calendar-grid">
-                <div className="col-spacer"/>
-                {days.map(day=>{
-                  const k=dateKey(day)
-                  return <div className={`col-header${isSameDate(day,today)?" today":""}`} key={k}>
-                    <div className="col-date">{SHORT_MONTHS[day.getMonth()]} {day.getDate()}</div>
-                    <div className="col-day">{DAYS[day.getDay()]}</div>
-                  </div>
-                })}
-                <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
-                {days.map(day=>{
-                  const k=dateKey(day), dayTasks=(isViewAll?filteredTasks:tasks)[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
-                  return <div className={`day-cell${isSameDate(day,today)?" today":""}`} key={k}>
-                    {dayTasks.map(task=>
-                      <div className={`task-card${task.done?" done":""}`} key={task.id} onClick={()=>handleEditTask(k,task)}>
-                        <div className="task-top">
-                          <button className="task-check" onClick={e=>{e.stopPropagation();toggleTask(k,task.id)}} type="button" aria-label={task.done?"Mark task incomplete":"Mark task complete"}>
-                            <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
-                          </button>
-                          <div className="task-name">{task.name}</div>
-                          {isViewAll && task.calendarName && <span className="task-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
-                        </div>
-                        <div className="task-footer">
-                          <span className="task-tag">{tagLabel(task.tag)}</span>
-                          <span className="task-time">{task.time}</span>
-                        </div>
+              <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <div className="calendar-grid">
+                  <div className="col-spacer"/>
+                  {days.map(day=>{
+                    const k=dateKey(day)
+                    return <div className={`col-header${isSameDate(day,today)?" today":""}`} key={k}>
+                      <div className="col-date">{SHORT_MONTHS[day.getMonth()]} {day.getDate()}</div>
+                      <div className="col-day">{DAYS[day.getDay()]}</div>
+                    </div>
+                  })}
+                  <div className="row-label"><span className="row-label-text">Week {weekNum}</span></div>
+                  {days.map(day=>{
+                    const k=dateKey(day), dayTasks=(isViewAll?filteredTasks:tasks)[k]||[], total=dayTasks.reduce((s,t)=>s+(parseDurationToMinutes(t.time)||0),0)
+                    return (
+                      <DayCell key={k} dayKey={k} day={day} today={today}>
+                        {dayTasks.map(task => (
+                          <DraggableTaskCard
+                            key={task.id}
+                            task={task}
+                            dayKey={k}
+                            onEdit={handleEditTask}
+                            onToggle={toggleTask}
+                            isViewAll={isViewAll}
+                          />
+                        ))}
+                        {!isViewAll && <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>}
+                        {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
+                      </DayCell>
+                    )
+                  })}
+                </div>
+                <DragOverlay>
+                  {activeDragTask ? (
+                    <div className="task-card drag-overlay">
+                      <div className="task-top">
+                        <div className="task-name">{activeDragTask.task.name}</div>
                       </div>
-                    )}
-                    {!isViewAll && <button className="add-task-btn" onClick={()=>openModal(k)} type="button" aria-label={`Add task for ${formatDateLabel(k)}`}>+</button>}
-                    {total ? <div className="day-total">Total Time: {formatMinutes(total)}</div> : null}
-                  </div>
-                })}
-              </div>
+                      <div className="task-footer">
+                        <span className="task-tag">{tagLabel(activeDragTask.task.tag)}</span>
+                        <span className="task-time">{activeDragTask.task.time}</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </div>
           </div>
         )}
@@ -1159,6 +1214,48 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
       </div>
 
       <div className={`toast${toast?" show":""}`}>{toast}</div>
+    </div>
+  )
+}
+
+function DayCell({ dayKey, day, today, children }: { dayKey: string; day: Date; today: Date; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: dayKey })
+  return (
+    <div ref={setNodeRef} className={`day-cell${isSameDate(day, today) ? " today" : ""}${isOver ? " drop-target" : ""}`}>
+      {children}
+    </div>
+  )
+}
+
+function DraggableTaskCard({ task, dayKey, onEdit, onToggle, isViewAll }: {
+  task: Task; dayKey: string; onEdit: (dayKey: string, task: Task) => void
+  onToggle: (dayKey: string, taskId: string) => void; isViewAll: boolean
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `task-${task.id}`,
+    data: { task, dayKey },
+  })
+  // Strip aria-describedby to avoid hydration mismatch from sequential DnD IDs
+  const { 'aria-describedby': _, ...safeAttributes } = attributes
+  const style: React.CSSProperties = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : {}
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...safeAttributes}
+      className={`task-card${task.done ? " done" : ""}${isDragging ? " dragging" : ""}`}
+      onClick={() => { if (!isDragging) onEdit(dayKey, task) }}
+    >
+      <div className="task-top">
+        <button className="task-check" onClick={e => { e.stopPropagation(); onToggle(dayKey, task.id) }} type="button" aria-label={task.done ? "Mark task incomplete" : "Mark task complete"}>
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+        </button>
+        <div className="task-name">{task.name}</div>
+        {isViewAll && task.calendarName && <span className="task-cal-badge" style={task.calendarColor ? { background: task.calendarColor } : undefined}>{task.calendarName.slice(0, 4).toUpperCase()}</span>}
+      </div>
+      <div className="task-footer">
+        <span className="task-tag">{tagLabel(task.tag)}</span>
+        <span className="task-time">{task.time}</span>
+      </div>
     </div>
   )
 }
