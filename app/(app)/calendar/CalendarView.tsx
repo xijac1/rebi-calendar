@@ -718,11 +718,6 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
     return [...tags]
   }, [tasks, filterCalendars])
 
-  const filterLabel = useMemo(() => {
-    if (filterCalendars.size === 0 && filterTags.size === 0) return "filter"
-    return "filter: active"
-  }, [filterCalendars, filterTags])
-
   const filteredTasks = useMemo(() => {
     if (filterCalendars.size === 0 && filterTags.size === 0) return tasks
     const result: TasksByDate = {}
@@ -747,7 +742,7 @@ Return ONLY a valid JSON object with a "tasks" array with this structure:
   const filterButton = (
     <button className={`filter-trigger${filterCalendars.size>0||filterTags.size>0?" active":""}`} onClick={()=>setFilterOpen(true)} type="button" style={{marginLeft:"auto"}}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:15,height:15}}><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
-      {filterLabel}
+      filter
     </button>
   )
 
